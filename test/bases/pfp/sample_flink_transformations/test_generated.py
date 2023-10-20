@@ -1,7 +1,6 @@
 import os
 
-from pfp.test_utils.flink.test_cases import generate_transform_tests_from_spec_file, \
-    PyFlinkDataStreamTransformationTestCase
+from pfp.test_utils.flink import generate_transform_tests_from_spec_file, PyFlinkDataStreamTransformationTestCase
 
 
 def full_test_file_path(file_name: str) -> str:

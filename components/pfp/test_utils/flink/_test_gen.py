@@ -1,3 +1,5 @@
+import importlib
+
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -72,3 +74,26 @@ class TransformationFunctionIntegrationTestSuiteSpec(BaseModel):
         )
 
 
+def generate_transform_tests(test_specs: TransformationFunctionIntegrationTestSuiteSpec):
+    transformation_pyfunction_specs: PythonFunctionSpec = test_specs.transformation_pyfunction_specs
+    transformation_module = importlib.import_module(name=transformation_pyfunction_specs.module)
+    transformation_fn = getattr(transformation_module, transformation_pyfunction_specs.function_name)
+
+    def _set_test_cases(cls):
+        for i, spec in enumerate(test_specs.test_cases_specs):
+            test_id: int = i + 1
+            test_fn_name = f"test_{transformation_fn.__name__}_{test_id}"
+            _test_fn = cls._build_test_case(transformation_fn, spec)
+            _test_fn.__doc__ = spec.description
+            setattr(cls, test_fn_name, _test_fn)
+        suite_description = test_specs.description if test_specs.description is not None else f"{transformation_fn.__name__} tests suite"
+        setattr(cls, "__doc__", suite_description)
+        return cls
+
+    return _set_test_cases
+
+
+def generate_transform_tests_from_spec_file(file_path: str):
+    tests_specs: TransformationFunctionIntegrationTestSuiteSpec = TransformationFunctionIntegrationTestSuiteSpec \
+        .parse_file(file_path)
+    return generate_transform_tests(test_specs=tests_specs)

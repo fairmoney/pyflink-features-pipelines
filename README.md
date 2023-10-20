@@ -104,6 +104,32 @@ The Polylith architecture allows for quick iteration, via ad-hoc scripts in the 
 break it down into bases and components.
 As a starter, you can check the different examples of stateless and stateful pipelines, in the [sample_flink_transformations](./bases/pfp/sample_flink_transformations) base.
 
+#### Testing
+Each base and component of the Polylith has associated tests in the [test](./test) folder.
+We're using the [pyspec](https://pypi.org/project/pytest-pspec/) plugin for `pytest`, which allows to add nice description
+of our unit tests to display them at execution time.
+To document your test, just proceed as below:
+```python
+import unittest
+
+class MyFunctionUnitTestCase(unittest.TestCase):
+    """
+    myfunction:
+    """
+    def test_should_do_this(self):
+        """
+        should do this
+        """
+        pass
+    
+    def test_should_do_that(self):
+        """
+        should do that
+        """
+        pass
+
+```
+to_do: document usage of generated pipeline tests 
 
 ## Next steps
 2023-10-20: 
