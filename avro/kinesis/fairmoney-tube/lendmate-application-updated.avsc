@@ -1,0 +1,293 @@
+{
+  "type": "record",
+  "name": "ApplicationUpdatedEvent",
+  "namespace": "io.fairmoney.tube.application",
+  "doc": "An event produced by tube service - wrapping io.fairmoney.lendmate.application.ApplicationUpdated events along with some backend metadata.",
+  "fields": [
+    {
+      "name": "backend_timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The timestamp attached by tube service when building the message."
+    },
+    {
+      "name": "event",
+      "doc": "The event produced by lendmate service when a loan application gets updated.",
+      "type": {
+        "type": "record",
+        "name": "ApplicationUpdated",
+        "fields": [
+          {
+            "name": "event_type",
+            "type": "string",
+            "doc": "Application event type"
+          },
+          {
+            "name": "event_version",
+            "type": "string",
+            "doc": "Application event version"
+          },
+          {
+            "name": "metadata",
+            "type": {
+              "type": "map",
+              "values": "string"
+            },
+            "default": {},
+            "doc": "An optional attribute containing extra metadata."
+          },
+          {
+            "name": "data",
+            "type": {
+              "type": "record",
+              "name": "ApplicationUpdatedData",
+              "fields": [
+                {
+                  "name": "status",
+                  "type": "string",
+                  "doc": "Application status"
+                },
+                {
+                  "name": "application_id",
+                  "type": "string",
+                  "doc": "Application ID"
+                },
+                {
+                  "name": "user_id",
+                  "type": "long",
+                  "doc": "Application's user ID"
+                },
+                {
+                  "name": "started_at",
+                  "doc": "UNIX timestamp of the application start",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  }
+                },
+                {
+                  "name": "application_content",
+                  "type": {
+                    "type": "record",
+                    "name": "ApplicationContent",
+                    "fields": [
+                      {
+                        "name": "data",
+                        "doc": "All application related data",
+                        "type": {
+                          "type": "record",
+                          "name": "ApplicationContentData",
+                          "fields": [
+                            {
+                              "name": "email",
+                              "type": "string",
+                              "doc": "Applicant's email"
+                            },
+                            {
+                              "name": "monthly_salary",
+                              "type": [
+                                "long",
+                                "null"
+                              ],
+                              "doc": "Applicant's monthly salary"
+                            },
+                            {
+                              "name": "requested_amount",
+                              "type": [
+                                "long",
+                                "null"
+                              ],
+                              "doc": "Applicant's requested amount"
+                            },
+                            {
+                              "name": "home_address",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's home address"
+                            },
+                            {
+                              "name": "city",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's city"
+                            },
+                            {
+                              "name": "state",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's state"
+                            },
+                            {
+                              "name": "professional_status",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's professional status"
+                            },
+                            {
+                              "name": "professional_category",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's professional category"
+                            },
+                            {
+                              "name": "professional_subcategory",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's professional subcategory"
+                            },
+                            {
+                              "name": "loan_purpose",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's loan purpose"
+                            },
+                            {
+                              "name": "next_of_kin",
+                              "type": [
+                                "null",
+                                {
+                                  "type": "record",
+                                  "name": "ApplicationContentDataNextOfKin",
+                                  "fields": [
+                                    {
+                                      "name": "name",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    {
+                                      "name": "phone_number",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  ],
+                                  "namespace": "io.fairmoney.lendmate.application",
+                                  "doc": "Applicant's next of kin"
+                                }
+                              ]
+                            }
+                          ],
+                          "namespace": "io.fairmoney.lendmate.application",
+                          "doc": "Application data"
+                        }
+                      },
+                      {
+                        "name": "geo_position",
+                        "type": {
+                          "type": "record",
+                          "name": "ApplicationContentGeoPosition",
+                          "fields": [
+                            {
+                              "name": "latitude",
+                              "type": [
+                                "double",
+                                "null"
+                              ],
+                              "doc": "Applicant's latitude"
+                            },
+                            {
+                              "name": "longitude",
+                              "type": [
+                                "double",
+                                "null"
+                              ],
+                              "doc": "Applicant's longitude"
+                            }
+                          ],
+                          "namespace": "io.fairmoney.lendmate.application",
+                          "doc": "Application geo position"
+                        }
+                      },
+                      {
+                        "name": "device_data",
+                        "type": {
+                          "type": "record",
+                          "name": "ApplicationContentDeviceData",
+                          "fields": [
+                            {
+                              "name": "ip",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's device IP"
+                            },
+                            {
+                              "name": "device_id",
+                              "type": [
+                                "null",
+                                "string"
+                              ],
+                              "default": null,
+                              "doc": "Applicant's device ID"
+                            },
+                            {
+                              "name": "seon_reference_id",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's device seon_reference_id"
+                            },
+                            {
+                              "name": "credolab_reference_id",
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "doc": "Applicant's device credolab_reference_id"
+                            }
+                          ],
+                          "namespace": "io.fairmoney.lendmate.application",
+                          "doc": "Application device data"
+                        }
+                      },
+                      {
+                        "name": "metadata",
+                        "type": [
+                          "null",
+                          {
+                            "type": "map",
+                            "values": "string"
+                          }
+                        ],
+                        "default": null,
+                        "doc": "An optional attribute containing extra metadata for event data.",
+                        "namespace": "io.fairmoney.lendmate.application"
+                      }
+                    ],
+                    "namespace": "io.fairmoney.lendmate.application",
+                    "doc": "Application content"
+                  }
+                }
+              ],
+              "namespace": "io.fairmoney.lendmate.application",
+              "doc": "Event data"
+            }
+          }
+        ],
+        "namespace": "io.fairmoney.lendmate.application",
+        "doc": "An instance of an ApplicationUpdated event, produced by lendmate service"
+      }
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "type": "record",
+  "name": "RawExternalServiceResponseReceived",
+  "fields": [
+    {
+      "name": "backend_metadata",
+      "type": {
+        "type": "record",
+        "name": "BackendMetadata",
+        "fields": [
+          {
+            "name": "published_at_utc_millis",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            },
+            "doc": "The UTC timestamp, in milliseconds since epoch, when the publisher produced the record to be published to the streaming platform."
+          },
+          {
+            "name": "response_received_at_utc_millis",
+            "type": [
+              {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+              },
+              "null"
+            ],
+            "doc": "The UTC timestamp, in milliseconds since epoch, when the external api called returned its response."
+          },
+          {
+            "name": "event_type",
+            "type": [
+              "null",
+              {
+                "type": "enum",
+                "name": "BackendEventTypes",
+                "symbols": [
+                  "ApplicationDataFinalised",
+                  "RawBvnProviderResponseClaimed",
+                  "ScoringReportReceived"
+                ],
+                "default": "RawBvnProviderResponseClaimed",
+                "namespace": "io.fairmoney.tube",
+                "doc": "Enum listing all possible values for the type of internal events that can trigger an external provider api call. These events are documented here: https://www.notion.so/fairmoney/fb8003a0aa044c4e8f19e273738249b9?v=3a7f3ed251994ceda0f186e7416bfd62"
+              }
+            ],
+            "default": null,
+            "doc": "Additional information coming from backend specifying the underlying event type triggering the call to the external service."
+          },
+          {
+            "name": "platform",
+            "type": [
+              "null",
+              {
+                "type": "enum",
+                "name": "Platform",
+                "symbols": [
+                  "android",
+                  "ios"
+                ],
+                "default": "android",
+                "namespace": "io.fairmoney.tube",
+                "doc": "Enum listing all possible values of the platform from which user can make a loan application"
+              }
+            ],
+            "default": null,
+            "doc": "The platform used for the loan application. If not relevant, can be left null."
+          },
+          {
+            "name": "user_id",
+            "type": "string",
+            "doc": "The id of the user for which external api call has been executed"
+          },
+          {
+            "name": "application_id",
+            "type": [
+              "null",
+              "string"
+            ],
+            "default": null,
+            "doc": "The id of the loan application for which external api call has been executed"
+          }
+        ],
+        "namespace": "io.fairmoney.tube"
+      },
+      "doc": "Some metadata attached by the backend service processing the external api call"
+    },
+    {
+      "name": "provider",
+      "type": {
+        "type": "enum",
+        "name": "Provider",
+        "symbols": [
+          "crc",
+          "credit_registry",
+          "credolab",
+          "first_central",
+          "nibss_igree",
+          "nibss_v1",
+          "seon",
+          "smile_id",
+          "zoral"
+        ],
+        "default": "first_central",
+        "namespace": "io.fairmoney.tube",
+        "doc": "Enum listing possible values for external providers being called by our services"
+      },
+      "doc": "The provider of the external api call"
+    },
+    {
+      "name": "raw_external_response_data",
+      "type": {
+        "type": "record",
+        "name": "RawExternalResponseData",
+        "fields": [
+          {
+            "name": "request_payload_json",
+            "type": [
+              "null",
+              "string"
+            ],
+            "default": null,
+            "doc": "An optional attribute to store the external api request payload - encoded as json string."
+          },
+          {
+            "name": "request_parameters",
+            "type": [
+              "null",
+              {
+                "type": "bytes",
+                "logicalType": "json"
+              }
+            ],
+            "default": null,
+            "doc": "An optional attribute to store the external api request parameters - as a key-value map."
+          },
+          {
+            "name": "response_json_string",
+            "type": [
+              "null",
+              "string"
+            ],
+            "default": null,
+            "doc": "The raw data returned by the third party api - encoded as json string"
+          }
+        ],
+        "namespace": "io.fairmoney.tube"
+      },
+      "doc": "The unprocessed response received by the external provider, with additional optional data about the request. "
+    }
+  ],
+  "namespace": "io.fairmoney.tube",
+  "doc": "An event streamed to the streaming platform by backend services, containing unstructured external services responses, along with some metadata attached by the producer."
+}

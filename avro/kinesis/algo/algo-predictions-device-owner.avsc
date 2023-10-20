@@ -1,0 +1,90 @@
+{
+    "type": "record",
+    "name": "AlgoDeviceOwnerPrediction",
+    "fields": [
+        {
+            "doc": "Type of the index used for the prediction",
+            "name": "index_type",
+            "type": "string"
+        },
+        {
+            "doc": "ID of the index used for the prediction",
+            "name": "index_id",
+            "type": "string"
+        },
+        {
+            "doc": "Type of the prediction",
+            "name": "prediction_type",
+            "type": "string"
+        },
+        {
+            "doc": "Group of the prediction",
+            "name": "prediction_group",
+            "type": "string"
+        },
+        {
+            "doc": "Date and time when the prediction was requested",
+            "name": "requested_at",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            }
+        },
+        {
+            "doc": "Features used for the prediction",
+            "name": "features",
+            "type": [
+                "null",
+                {
+                    "type": "map",
+                    "values": "string",
+                    "name": "feature"
+                }
+            ],
+            "default": null
+        },
+        {
+            "doc": "Unique identifier for the prediction",
+            "name": "id",
+            "type": "string",
+            "default": "2da8b6f2-d231-4529-9dad-96fd5370fee8"
+        },
+        {
+            "doc": "Date and time when the prediction was created",
+            "name": "created_at",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            },
+            "default": 1697442779393
+        },
+        {
+            "doc": "List of device owner predictions",
+            "name": "predictions",
+            "type": [
+                "null",
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "record",
+                        "name": "DeviceOwnerPrediction",
+                        "fields": [
+                            {
+                                "doc": "Predicted device owner status for the user",
+                                "name": "device_owner",
+                                "type": "long"
+                            },
+                            {
+                                "doc": "Name of the model used for the prediction",
+                                "name": "model_used",
+                                "type": "string"
+                            }
+                        ]
+                    },
+                    "name": "prediction"
+                }
+            ],
+            "default": null
+        }
+    ]
+}

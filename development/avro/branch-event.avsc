@@ -1,0 +1,210 @@
+{
+  "namespace": "io.fairmoney.monolith.avro.branchevent",
+  "type": "record",
+  "name": "BranchEvent",
+  "doc": "Branch event data populated by the backend",
+  "fields": [
+    {
+      "name": "aaid",
+      "type": "string",
+      "doc": "Android Advertising ID."
+    },
+    {
+      "name": "user_id",
+      "type": [
+        "int",
+        "null"
+      ],
+      "doc": "User ID in Monolith."
+    },
+    {
+      "name": "application_id",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Application ID in Monolith."
+    },
+    {
+      "name": "event_id",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Branch event ID."
+    },
+    {
+      "name": "event_name",
+      "type": "string",
+      "doc": "Branch event name."
+    },
+    {
+      "name": "channel",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Channel specified for the last attributed touch. Can be specified on links by the client, or prefilled automatically server side in some cases."
+    },
+    {
+      "name": "campaign",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Campaign (name) specified for the last attributed touch. Can be specified on links by the client, or prefilled automatically server side in some cases"
+    },
+    {
+      "name": "advertising_partner",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Human-readable advertising partner name specified for the last Branch CTA view. Set automatically server side."
+    },
+    {
+      "name": "marketing_title",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Quick Link title."
+    },
+    {
+      "name": "feature",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Feature specified for the last attributed touch. Can be specified on links by the client, or prefilled automatically server side in some cases."
+    },
+    {
+      "name": "geo_continent_code",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Continent code, derived from IP address, set automatically server side."
+    },
+    {
+      "name": "geo_country_code",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Country code, derived from IP address, set automatically server side."
+    },
+    {
+      "name": "geo_city_code",
+      "type": [
+        "int",
+        "null"
+      ],
+      "doc": "City code, derived from IP address, set automatically server side."
+    },
+    {
+      "name": "geo_lat",
+      "type": [
+        "float",
+        "null"
+      ],
+      "doc": "Latitude, derived from IP address (above), set automatically server side."
+    },
+    {
+      "name": "geo_long",
+      "type": [
+        "float",
+        "null"
+      ],
+      "doc": "Longtitude, derived from IP address (above), set automatically server side."
+    },
+    {
+      "name": "os",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "OS of the device where the event occurred. note that robots includes web and app robots for easy filtering. specified by the client."
+    },
+    {
+      "name": "os_version",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "OS version (iOS) or API version (Android) of the device where the event occurred. specified by the client."
+    },
+    {
+      "name": "environment",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Runtime environment where the event occurred, which can distinguish between e.g. full app vs instant app. specified by the client."
+    },
+    {
+      "name": "platform",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Convenience dimension that allows users to easily see web vs app, desktop vs mobile, and iOS vs Android vs other. derived from information specified by the client."
+    },
+    {
+      "name": "brand",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Brand of the device where the event occurred. specified by the client."
+    },
+    {
+      "name": "model",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Model of the device where the event occurred. specified by the client."
+    },
+    {
+      "name": "browser",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "A human-readable name for the browser from which the web event originated. Derived from user-agent string. specified by the client."
+    },
+    {
+      "name": "user_agent",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "User agent of the browser or app where the event occurred. Usually associated with a webview. specified by the client."
+    },
+    {
+      "name": "parameters",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Branch event custom data."
+    },
+    {
+      "name": "payload",
+      "type": [
+        "string",
+        "null"
+      ],
+      "doc": "Branch event whole payload."
+    },
+    {
+      "name" : "backend_received_at_millis",
+      "type" : {
+        "type" : "long",
+        "logicalType" : "timestamp-millis"
+      },
+      "doc": "The timestamp, in milliseconds since epoch, when the event has been received by the backend."
+    }
+  ]
+}

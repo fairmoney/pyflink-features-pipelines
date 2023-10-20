@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "pfp"
+version = "0.1.0"
+description = "A set of Python Flink pipelines to compute real time features"
+authors = ["Nicolas Gallot <nicolas.gallot@predictus.io>"]
+readme = "README.md"
+
+packages = [
+    {include = "pfp/flink_datastream_connectors", from = "components"},
+    {include = "pfp/flink_datastream_schemas", from = "components"},
+    {include = "pfp/sample_datastream_pipeline",from = "bases"},
+    {include = "pfp/flink_datastream_sources",from = "components"},
+    {include = "pfp/schema_registry",from = "components"},
+    {include = "pfp/test_utils",from = "components"},
+    {include = "pfp/sample_flink_transformations",from = "bases"},
+    {include = "pfp/common_utils",from = "components"},
+]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+apache-flink = "^1.15.2"
+boto3 = "^1.28.64"
+pydantic = "<2.0.0"
+
+
+[tool.poetry.group.dev.dependencies]
+ipython = "^8.16.1"
+pytest = "^7.4.2"
+testcontainers = "^3.7.1"
+testcontainers-kafka = "^0.0.1rc1"
+pytest-pspec = "^0.0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

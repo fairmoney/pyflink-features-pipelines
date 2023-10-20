@@ -1,0 +1,334 @@
+{
+  "type": "record",
+  "name": "ParsedNgBvnSmileIdResponse",
+  "fields": [
+    {
+      "name": "backend_metadata",
+      "type": {
+        "type": "record",
+        "name": "BackendMetadata",
+        "fields": [
+          {
+            "name": "published_at_utc_millis",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            },
+            "doc": "The UTC timestamp, in milliseconds since epoch, when the publisher produced the record to be published to the streaming platform."
+          },
+          {
+            "name": "response_received_at_utc_millis",
+            "type": [
+              {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+              },
+              "null"
+            ],
+            "doc": "The UTC timestamp, in milliseconds since epoch, when the external api called returned its response."
+          },
+          {
+            "name": "event_type",
+            "type": [
+              "null",
+              {
+                "type": "enum",
+                "name": "BackendEventTypes",
+                "symbols": [
+                  "RawBvnProviderResponseClaimed",
+                  "ApplicationDataFinalised"
+                ],
+                "default": "RawBvnProviderResponseClaimed",
+                "namespace": "io.fairmoney.rps",
+                "doc": "Enum listing all possible values for the type of internal events that can trigger an external provider api call. These events are documented here: https://www.notion.so/fairmoney/fb8003a0aa044c4e8f19e273738249b9?v=3a7f3ed251994ceda0f186e7416bfd62"
+              }
+            ],
+            "default": null,
+            "doc": "Additional information coming from backend specifying the underlying event type triggering the call to the external service."
+          },
+          {
+            "name": "platform",
+            "type": [
+              "null",
+              {
+                "type": "enum",
+                "name": "Platform",
+                "symbols": [
+                  "android",
+                  "ios"
+                ],
+                "default": "android",
+                "namespace": "io.fairmoney.rps",
+                "doc": "Enum listing all possible values of the platform from which user can make a loan application"
+              }
+            ],
+            "default": null,
+            "doc": "The platform used for the loan application. If not relevant, can be left null."
+          },
+          {
+            "name": "user_id",
+            "type": "string",
+            "doc": "The id of the user for which external api call has been executed"
+          },
+          {
+            "name": "application_id",
+            "type": [
+              "null",
+              "string"
+            ],
+            "default": null,
+            "doc": "The id of the loan application for which external api call has been executed"
+          }
+        ],
+        "namespace": "io.fairmoney.rps"
+      },
+      "doc": "Some metadata attached by the backend service processing the external api call"
+    },
+    {
+      "name": "report",
+      "type": {
+        "type": "record",
+        "name": "NgBvnSmileIdReport",
+        "fields": [
+          {
+            "name": "bvn",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's BVN number. Considered as PII data."
+          },
+          {
+            "name": "nin",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's National Identification Number. Considered as PII data."
+          },
+          {
+            "name": "email",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's email address. Considered as PII data."
+          },
+          {
+            "name": "title",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's personal title <Mr>, <Ms>. Considered as PII data."
+          },
+          {
+            "name": "gender",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's gender. Considered as PII data."
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "doc": "Undocumented field."
+          },
+          {
+            "name": "last_name",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's last name. Considered as PII data."
+          },
+          {
+            "name": "first_name",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's first name. Considered as PII data."
+          },
+          {
+            "name": "middle_name",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's middle name. Considered as PII data."
+          },
+          {
+            "name": "name_on_card",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "Name on the card. Considered as PII data."
+          },
+          {
+            "name": "date_of_birth",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's date of birth. Considered as PII data."
+          },
+          {
+            "name": "base64_image",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "Base64 encoded image of the user. Considered as PII data."
+          },
+          {
+            "name": "lga_of_origin",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's local government area of origin."
+          },
+          {
+            "name": "nationality",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's nationality."
+          },
+          {
+            "name": "watch_listed",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "Undocumented field."
+          },
+          {
+            "name": "phone_number1",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's phone number. Considered as PII data."
+          },
+          {
+            "name": "phone_number2",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's phone number 2. Considered as PII data."
+          },
+          {
+            "name": "response_code",
+            "type": [
+              "null",
+              {
+                "type": "string",
+                "namedString": "io.fairmoney.rps.StrictStr"
+              }
+            ],
+            "default": null,
+            "doc": "Undocumented field."
+          },
+          {
+            "name": "marital_status",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's marital status."
+          },
+          {
+            "name": "state_of_origin",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's state of origin."
+          },
+          {
+            "name": "level_of_account",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's account level."
+          },
+          {
+            "name": "enrollment_bank",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "Undocumented field."
+          },
+          {
+            "name": "lga_of_residence",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's local government area of residence. Considered as PII data."
+          },
+          {
+            "name": "enrollment_branch",
+            "type": [
+              "null",
+              {
+                "type": "string",
+                "namedString": "io.fairmoney.rps.StrictStr"
+              }
+            ],
+            "default": null,
+            "doc": "Undocumented field."
+          },
+          {
+            "name": "registration_date",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's date of registration."
+          },
+          {
+            "name": "state_of_residence",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's residential state."
+          },
+          {
+            "name": "residential_address",
+            "type": {
+              "type": "string",
+              "namedString": "io.fairmoney.rps.StrictStr"
+            },
+            "doc": "User's residential address. Considered as PII data."
+          },
+          {
+            "name": "message",
+            "type": [
+              "null",
+              {
+                "type": "string",
+                "namedString": "io.fairmoney.rps.StrictStr"
+              }
+            ],
+            "default": null,
+            "doc": "Undocumented field."
+          }
+        ],
+        "namespace": "io.fairmoney.rps"
+      },
+      "doc": "Parsed BVN report fetched from Smile ID API"
+    }
+  ],
+  "namespace": "io.fairmoney.rps",
+  "doc": "An instance of report fetched from Smile ID API, produced by DataTech's reports-parsing-service"
+}

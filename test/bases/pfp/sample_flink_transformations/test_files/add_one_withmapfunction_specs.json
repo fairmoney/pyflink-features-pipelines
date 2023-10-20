@@ -1,0 +1,29 @@
+{
+  "transformation_function": "pfp.sample_flink_transformations.add_one_with_mapfunction",
+  "test_cases_specs": [
+    {
+      "description": "add_one_with_mapfunction should add 1 to each element",
+      "input_spec": [
+        {
+          "arg_name": "inputs",
+          "values": [0,1]
+        }
+      ],
+      "output_spec": {
+        "values": [1,2]
+      }
+    },
+    {
+      "description": "add_one_with_mapfunction should still add 1 to each element",
+      "input_spec": [
+        {
+          "arg_name": "inputs",
+          "values": [1,2]
+        }
+      ],
+      "output_spec": {
+        "values": [2,3]
+      }
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kinesis/1.15.4/flink-sql-connector-kinesis-1.15.4.jar
+https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-avro/1.15.4/flink-sql-avro-1.15.4.jar

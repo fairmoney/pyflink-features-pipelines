@@ -1,0 +1,2174 @@
+{
+  "type": "record",
+  "name": "ParsedFirstCentralCreditReport",
+  "fields": [
+    {
+      "name": "backend_metadata",
+      "type": {
+        "type": "record",
+        "name": "BackendMetadata",
+        "fields": [
+          {
+            "name": "published_at_utc_millis",
+            "type": {
+              "type": "long",
+              "logicalType": "timestamp-millis"
+            },
+            "doc": "The UTC timestamp, in milliseconds since epoch, when the publisher produced the record to be published to the streaming platform."
+          },
+          {
+            "name": "response_received_at_utc_millis",
+            "type": [
+              {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+              },
+              "null"
+            ],
+            "doc": "The UTC timestamp, in milliseconds since epoch, when the external api called returned its response."
+          },
+          {
+            "name": "event_type",
+            "type": [
+              "null",
+              {
+                "type": "enum",
+                "name": "BackendEventTypes",
+                "symbols": [
+                  "RawBvnProviderResponseClaimed",
+                  "ApplicationDataFinalised",
+                  "ScoringReportReceived"
+                ],
+                "default": "RawBvnProviderResponseClaimed",
+                "namespace": "io.fairmoney.rps",
+                "doc": "Enum listing all possible values for the type of internal events that can trigger an external provider api call. These events are documented here: https://www.notion.so/fairmoney/fb8003a0aa044c4e8f19e273738249b9?v=3a7f3ed251994ceda0f186e7416bfd62"
+              }
+            ],
+            "default": null,
+            "doc": "Additional information coming from backend specifying the underlying event type triggering the call to the external service."
+          },
+          {
+            "name": "platform",
+            "type": [
+              "null",
+              {
+                "type": "enum",
+                "name": "Platform",
+                "symbols": [
+                  "android",
+                  "ios"
+                ],
+                "default": "android",
+                "namespace": "io.fairmoney.rps",
+                "doc": "Enum listing all possible values of the platform from which user can make a loan application"
+              }
+            ],
+            "default": null,
+            "doc": "The platform used for the loan application. If not relevant, can be left null."
+          },
+          {
+            "name": "user_id",
+            "type": "string",
+            "doc": "The id of the user for which external api call has been executed"
+          },
+          {
+            "name": "application_id",
+            "type": [
+              "null",
+              "string"
+            ],
+            "default": null,
+            "doc": "The id of the loan application for which external api call has been executed"
+          }
+        ],
+        "namespace": "io.fairmoney.rps"
+      },
+      "doc": "Some metadata attached by the backend service processing the external api call"
+    },
+    {
+      "name": "report",
+      "type": {
+        "type": "record",
+        "name": "FirstCentralCreditReport",
+        "fields": [
+          {
+            "name": "SubjectList",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "SubjectListItem",
+                  "fields": [
+                    {
+                      "name": "ConsumerID",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "SearchOutput",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Reference",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "PersonalDetailsSummary",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "PersonalDetailsSummaryItem",
+                  "fields": [
+                    {
+                      "name": "ConsumerID",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Header",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "ReferenceNo",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "Nationality",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "NationalIDNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PassportNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "DriversLicenseNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "BankVerificationNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PencomIDNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "OtheridNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "BirthDate",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "Dependants",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "Gender",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "MaritalStatus",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "ResidentialAddress1",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "ResidentialAddress2",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "ResidentialAddress3",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "ResidentialAddress4",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PostalAddress1",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PostalAddress2",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PostalAddress3",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PostalAddress4",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "HomeTelephoneNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "WorkTelephoneNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "CellularNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "EmailAddress",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "EmployerDetail",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "PropertyOwnedType",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "Surname",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "FirstName",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "OtherNames",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "DeliquencyInformation",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "DeliquencyInformation",
+                  "fields": [
+                    {
+                      "name": "SubscriberName",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "AccountNo",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "PeriodNum",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "MonthsinArrears",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "CreditAccountSummary",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "CreditAccountSummaryItem",
+                  "fields": [
+                    {
+                      "name": "TotalMonthlyInstalment",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalOutstandingdebt",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalAccountarrear",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Amountarrear",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalAccounts",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalAccounts1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalaccountinGodcondition",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalaccountinGoodcondition",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalNumberofJudgement",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalJudgementAmount",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "LastJudgementDate",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalNumberofDishonoured",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalDishonouredAmount",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "LastBouncedChequesDate",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "TotalMonthlyInstalment1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalOutstandingdebt1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalAccountarrear1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Amountarrear1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalaccountinGodcondition1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalaccountinBadcondition",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalNumberofJudgement1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalJudgementAmount1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "LastJudgementDate1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalNumberofDishonoured1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TotalDishonouredAmount1",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "LastBouncedChequesDate1",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "Rating",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "CreditAccountRating",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "CreditAccountRatingItem",
+                  "fields": [
+                    {
+                      "name": "NoOfHomeLoanAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfHomeLoanAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfAutoLoanccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfAutoLoanAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfStudyLoanAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfStudyLoanAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfPersonalLoanAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfPersonalLoanAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfCreditCardAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfCreditCardAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfRetailAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfRetailAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfJointLoanAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfJointLoanAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfTelecomAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfTelecomAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfOtherAccountsGood",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "NoOfOtherAccountsBad",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "CreditAgreementSummary",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "CreditAgreementSummaryItem",
+                  "fields": [
+                    {
+                      "name": "DateAccountOpened",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "SubscriberName",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "AccountNo",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "SubAccountNo",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "IndicatorDescription",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "OpeningBalanceAmt",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "Currency",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "CurrentBalanceDebitInd",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "CurrentBalanceAmt",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "InstalmentAmount",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "AmountOverdue",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "ClosedDate",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "LoanDuration",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "RepaymentFrequency",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "LastUpdatedDate",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "PerformanceStatus",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "AccountStatus",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "AccountMonthlyPaymentHistoryHeader",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "AccountMonthlyPaymentHistoryHeaderItem",
+                  "fields": [
+                    {
+                      "name": "TableName",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "DisplayText",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Company",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH24",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH23",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH22",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH21",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH20",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH19",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH18",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH17",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH16",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH15",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH14",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH13",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH12",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH11",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH10",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH09",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH08",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH07",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH06",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH05",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH04",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH03",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH02",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MH01",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "AccountMonthlyPaymentHistory",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "AccountMonthlyPaymentHistoryItem",
+                  "fields": [
+                    {
+                      "name": "Header",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "TableName",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "DisplayText",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "DateAccountOpened",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "SubscriberName",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "AccountNo",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "SubAccountNo",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Currency",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "CurrentBalanceDebitInd",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "IndicatorDescription",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "MonthlyInstalmentAmt",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "LastPaymentDate",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "SubscriberTypeInd",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "AccountNote",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "RepaymentFrequencyCode",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "OpeningBalanceAmt",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "CurrentBalanceAmt",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "AmountOverdue",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "ClosedDate",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "LastUpdatedDate",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "PerformanceStatus",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "LoanDuration",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "AccountStatus",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M01",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M02",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M03",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M04",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M05",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M06",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M07",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M08",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M09",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M10",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M11",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M12",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M13",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M14",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M15",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M16",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M17",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M18",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M19",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M20",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M21",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M22",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M23",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "M24",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "GuarantorCount",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "GuarantorCountItem",
+                  "fields": [
+                    {
+                      "name": "GuarantorsSecured",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "Accounts",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "GuarantorDetails",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "GuarantorDetail",
+                  "fields": [
+                    {
+                      "name": "GuarantorFirstName",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorOtherName",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorNationalIDNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorPassport",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorDriverLicenceNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorPENCOMIDNo",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorOtherID",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorGender",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorDateOfBirth",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorAddress1",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorAddress2",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorAddress3",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorHomeTelephone",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorworkTelephone",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "GuarantorMobileTelephone",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "EnquiryHistoryTop",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "EnquiryHistoryTopItem",
+                  "fields": [
+                    {
+                      "name": "SubscriberEnquiryResultID",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "DateRequested",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "SubscriberName",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "EnquiryReason",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "CompanyTelephoneNo",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "IdentificationHistory",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "IdentificationHistoryItem",
+                  "fields": [
+                    {
+                      "name": "UpDateDate",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "UpDateOnDate",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "IdentificationNumber",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "IdentificationType",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "AddressHistory",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "AddressHistoryItem",
+                  "fields": [
+                    {
+                      "name": "UpDateDate",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "UpDateOnDate",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "Address1",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "Address2",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "Address3",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "Address4",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    },
+                    {
+                      "name": "AddressTypeInd",
+                      "type": [
+                        "null",
+                        "string"
+                      ],
+                      "default": null,
+                      "doc": "A field with unknown type which is being converted as an optional string"
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "EmploymentHistory",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "EmploymentHistoryItem",
+                  "fields": [
+                    {
+                      "name": "UpDateDate",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "UpDateOnDate",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "EmployerDetail",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    },
+                    {
+                      "name": "Occupation",
+                      "type": [
+                        "null",
+                        {
+                          "type": "string",
+                          "namedString": "io.fairmoney.rps.StrictStr"
+                        }
+                      ],
+                      "default": null
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "TelephoneHistory",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "TelephoneHistory",
+                  "fields": [],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          },
+          {
+            "name": "EnquiryDetails",
+            "type": [
+              "null",
+              {
+                "type": "array",
+                "items": {
+                  "type": "record",
+                  "name": "EnquiryDetail",
+                  "fields": [
+                    {
+                      "name": "SubscriberEnquiryResultID",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "ProductID",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "MatchingRate",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    },
+                    {
+                      "name": "SubscriberEnquiryEngineID",
+                      "type": {
+                        "type": "string",
+                        "namedString": "io.fairmoney.rps.StrictStr"
+                      }
+                    }
+                  ],
+                  "namespace": "io.fairmoney.rps"
+                }
+              }
+            ],
+            "default": null
+          }
+        ],
+        "namespace": "io.fairmoney.rps"
+      },
+      "doc": "Parsed report fetched from First Central API"
+    }
+  ],
+  "namespace": "io.fairmoney.rps",
+  "doc": "An instance of report fetched from FirstCentral api, produced by the DataTech's reports-parsing-service."
+}

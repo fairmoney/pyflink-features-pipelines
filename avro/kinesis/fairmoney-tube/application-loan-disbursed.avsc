@@ -1,0 +1,147 @@
+{
+  "type": "record",
+  "name": "ApplicationLoanDisbursedEvent",
+  "namespace": "io.fairmoney.tube.application",
+  "doc": "Avro schema for a record that will contain ApplicationLoanDisbursed SNS event.",
+  "fields": [
+    {
+      "name": "tube_published_at_utc_milliseconds",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The UTC timestamp attached by tube service when building the message, in milliseconds since epoch."
+    },
+    {
+      "name": "event",
+      "doc": "Event data",
+      "type": {
+        "type": "record",
+        "name": "ApplicationLoanDisbursed",
+        "fields": [
+          {
+            "name": "event_type",
+            "type": "string",
+            "doc": "Application event type"
+          },
+          {
+            "name": "event_version",
+            "type": "string",
+            "doc": "Application event version"
+          },
+          {
+            "name": "metadata",
+            "type": {
+              "type": "map",
+              "values": "string"
+            },
+            "default": {},
+            "doc": "An optional attribute containing extra metadata."
+          },
+          {
+            "name": "data",
+            "type": {
+              "type": "record",
+              "name": "ApplicationLoanDisbursedData",
+              "fields": [
+                {
+                  "name": "application_id",
+                  "type": "string",
+                  "doc": "Application ID"
+                },
+                {
+                  "name": "status",
+                  "type": "string",
+                  "doc": "Application status"
+                },
+                {
+                  "name": "account_id",
+                  "type": "string",
+                  "doc": "Account ID"
+                },
+                {
+                  "name": "user_id",
+                  "type": "long",
+                  "doc": "Application's user ID"
+                },
+                {
+                  "name": "loan_disbursed_at",
+                  "doc": "UNIX timestamp of the application loan disbursement",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  }
+                },
+                {
+                  "name": "loan_disbursed_amount_in_cents",
+                  "type": "long",
+                  "doc": "Loan disbursement ammount in cents"
+                },
+                {
+                  "name": "selected_loan_offer",
+                  "type": {
+                    "type": "record",
+                    "name": "ApplicationLoanDisbursedDataSelectedLoanOffer",
+                    "fields": [
+                      {
+                        "name": "offer_id",
+                        "type": "string",
+                        "doc": "Offer ID"
+                      },
+                      {
+                        "name": "min_amount",
+                        "type": "double",
+                        "doc": "Min amount of the loan"
+                      },
+                      {
+                        "name": "max_amount",
+                        "type": "double",
+                        "doc": "Max amount of the loan"
+                      },
+                      {
+                        "name": "details",
+                        "type": {
+                          "type": "array",
+                          "items": {
+                            "name": "ApplicationLoanDisbursedDataSelectedLoanOfferDetail",
+                            "type": "record",
+                            "fields": [
+                              {
+                                "name": "maturity",
+                                "type": "long",
+                                "doc": "Loan maturity in days"
+                              },
+                              {
+                                "name": "interest_rate",
+                                "type": "double",
+                                "doc": "Loan interest rate per month"
+                              },
+                              {
+                                "name": "total_interest_rate",
+                                "type": "double",
+                                "doc": "Loan total interest rate"
+                              },
+                              {
+                                "name": "instafin_product_id",
+                                "type": "string",
+                                "doc": "Instafin product ID"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "namespace": "io.fairmoney.lendmate.application",
+              "doc": "Event data"
+            }
+          }
+        ],
+        "namespace": "io.fairmoney.lendmate.application",
+        "doc": "An instance of an ApplicationLoanDisbursed event, produced by lendmate service"
+      }
+    }
+  ]
+}

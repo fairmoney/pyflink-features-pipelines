@@ -1,0 +1,100 @@
+{
+    "type": "record",
+    "name": "AlgoIncomePrediction",
+    "fields": [
+        {
+            "doc": "Type of the index used for the prediction",
+            "name": "index_type",
+            "type": "string"
+        },
+        {
+            "doc": "ID of the index used for the prediction",
+            "name": "index_id",
+            "type": "string"
+        },
+        {
+            "doc": "Type of the prediction",
+            "name": "prediction_type",
+            "type": "string"
+        },
+        {
+            "doc": "Group of the prediction",
+            "name": "prediction_group",
+            "type": "string"
+        },
+        {
+            "doc": "Date and time when the prediction was requested",
+            "name": "requested_at",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            }
+        },
+        {
+            "doc": "Features used for the prediction",
+            "name": "features",
+            "type": [
+                "null",
+                {
+                    "type": "map",
+                    "values": "string",
+                    "name": "feature"
+                }
+            ],
+            "default": null
+        },
+        {
+            "doc": "Unique identifier for the prediction",
+            "name": "id",
+            "type": "string",
+            "default": "ffdef8b7-54a5-4390-9c92-bc0c4943ede9"
+        },
+        {
+            "doc": "Date and time when the prediction was created",
+            "name": "created_at",
+            "type": {
+                "type": "long",
+                "logicalType": "timestamp-millis"
+            },
+            "default": 1697442891152
+        },
+        {
+            "doc": "List of income predictions",
+            "name": "predictions",
+            "type": [
+                "null",
+                {
+                    "type": "array",
+                    "items": {
+                        "type": "record",
+                        "name": "IncomePrediction",
+                        "fields": [
+                            {
+                                "doc": "Predicted income for the user",
+                                "name": "income",
+                                "type": "long"
+                            },
+                            {
+                                "doc": "Name of the model used for the prediction",
+                                "name": "model_used",
+                                "type": "string"
+                            },
+                            {
+                                "doc": "Income decile for the prediction",
+                                "name": "income_decile",
+                                "type": "long"
+                            },
+                            {
+                                "doc": "Income percentile for the prediction",
+                                "name": "income_percentile",
+                                "type": "long"
+                            }
+                        ]
+                    },
+                    "name": "prediction"
+                }
+            ],
+            "default": null
+        }
+    ]
+}

@@ -1,0 +1,85 @@
+{
+  "type": "record",
+  "name": "ApplicationFinalisedEvent",
+  "namespace": "io.fairmoney.tube.application",
+  "doc": "Avro schema for a record that will contain ApplicationFinalised SNS event.",
+  "fields": [
+    {
+      "name": "tube_published_at_utc_milliseconds",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "The UTC timestamp attached by tube service when building the message, in milliseconds since epoch."
+    },
+    {
+      "name": "event",
+      "doc": "Event data",
+      "type": {
+        "type": "record",
+        "name": "ApplicationFinalised",
+        "fields": [
+          {
+            "name": "event_type",
+            "type": "string",
+            "doc": "Application event type"
+          },
+          {
+            "name": "event_version",
+            "type": "string",
+            "doc": "Application event version"
+          },
+          {
+            "name": "metadata",
+            "type": {
+              "type": "map",
+              "values": "string"
+            },
+            "default": {},
+            "doc": "An optional attribute containing extra metadata."
+          },
+          {
+            "name": "data",
+            "type": {
+              "type": "record",
+              "name": "ApplicationFinalisedData",
+              "fields": [
+                {
+                  "name": "application_id",
+                  "type": "string",
+                  "doc": "Application ID"
+                },
+                {
+                  "name": "user_id",
+                  "type": "long",
+                  "doc": "Application's user ID"
+                },
+                {
+                  "name": "status",
+                  "type": "string",
+                  "doc": "Application status"
+                },
+                {
+                  "name": "finalized_at",
+                  "doc": "UNIX timestamp of the application finalization",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  }
+                },
+                {
+                  "name": "tnc_accepted_at",
+                  "doc": "UNIX timestamp of the terms and conditions accepted",
+                  "type": {
+                    "type": "long",
+                    "logicalType": "timestamp-millis"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
