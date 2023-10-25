@@ -19,7 +19,7 @@ class LocalSchemaRegistryTestCase(TestCase):
         client: LocalSchemaRegistryClient = LocalSchemaRegistryClient()
         local_kinesis_schemas_paths: list[str] = self._load_all_kinesis_schemas_paths()
         for p in local_kinesis_schemas_paths:
-            schema = client.fetch_avro_schema(address=p)
+            schema = client.fetch_avro_schema(address=p, version=None)
             self.assertTrue(isinstance(schema, dict))
 
 

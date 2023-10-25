@@ -1,0 +1,18 @@
+[
+  {
+    "PropertyGroupId": "kinesis.flink.connector.consumer",
+    "PropertyMap" : {
+      "aws.region" : "eu-west-1",
+      "flink.stream.initpos" : "LATEST"
+    }
+  },
+  {
+    "PropertyGroupId": "application",
+    "PropertyMap" : {
+      "name": "Sample-streaming-pipeline",
+      "pipeline_jars": [
+        "jars/flink-sql-connector-kinesis_2.11-1.13.3.jar"
+      ]
+    }
+  }
+]
