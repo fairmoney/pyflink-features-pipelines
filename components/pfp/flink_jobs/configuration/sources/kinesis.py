@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, root_validator
 
 from pfp.flink_jobs.configuration.schema_registry import SchemaRegistryConfig
 from pfp.flink_jobs.configuration.sources.core import BaseSourceConfig
@@ -9,7 +9,8 @@ from pfp.flink_jobs.configuration.sources.core import BaseSourceConfig
 
 class KinesisStreamInitPosition(Enum):
     TRIM_HORIZON: str = "TRIM_HORIZON"
-    AT_TIMESTAMP: str = "AT_TIMESTAMP"
+    # todo: add support for this option in KinesisSourceConfig
+    # AT_TIMESTAMP: str = "AT_TIMESTAMP"
     LATEST: str = "LATEST"
 
 
@@ -41,7 +42,23 @@ class KinesisSourceConfig(BaseSourceConfig):
                     "unique name. However, consumer names do not have to be unique across data streams. Reusing a "
                     "consumer name will result in existing subscriptions being terminated."
     )
-    # todo: add custom validator
+
+    @root_validator(pre=True)
+    def validate_publish_mode(cls, values: dict):
+        record_publisher_type = values.get("record_publisher_type")
+        efo_consumer_name = values.get("efo_consumer_name")
+        if record_publisher_type == KinesisRecordPublisherType.EFO and efo_consumer_name is None:
+            raise ValueError("record_publisher_type is set to EFO but efo_consumer_name is not set. Please provide a "
+                             "value for efo_consumer_name.")
+        if record_publisher_type == KinesisRecordPublisherType.POLLING and efo_consumer_name is not None:
+            raise ValueError(f"record_publisher_type is set to POLLING but efo_consumer_name is set to "
+                             f"{efo_consumer_name}. Please remove efo_consumer_name option.")
+        if record_publisher_type is None and efo_consumer_name is not None:
+            raise ValueError(f"record_publisher_type is not set but efo_consumer_name is set to "
+                             f"{efo_consumer_name}. Please remove efo_consumer_name option.")
+        return values
+
+
     class Config:
         use_enum_values = True
         allow_population_by_field_name = True

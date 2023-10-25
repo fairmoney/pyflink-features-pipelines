@@ -2,12 +2,12 @@ from typing import Union
 
 from pyflink.datastream import SourceFunction
 from pyflink.datastream.connectors import Source
+from pyflink.datastream.connectors.kinesis import FlinkKinesisConsumer
+from pyflink.datastream.formats.avro import AvroRowDeserializationSchema
 
 from pfp.flink_jobs.builder.schema_registry import fetch_avro_schema
 from pfp.flink_jobs.builder.sources.core import FlinkJobSourceBuilder
-from pfp.flink_jobs.configuration.sources import KinesisAvroSourceConfig, SourceConfig
-from pyflink.datastream.connectors.kinesis import FlinkKinesisConsumer
-from pyflink.datastream.formats.avro import AvroRowDeserializationSchema
+from pfp.flink_jobs.configuration.sources import SourceConfig
 
 
 class FlinkJobKinesisAvroSourceBuilder(FlinkJobSourceBuilder):

@@ -28,7 +28,7 @@ class AwsGlueAvroSchemaRegistryConfig(BaseSchemaRegistryConfig, BaseModel):
         default=...,
         description="The ARN of the schema to be fetched from Glue schema registry"
     )
-    schema_version_id: str = Field(
+    schema_version_id: int = Field(
         default=...,
         description="The id of the schema's version to fetch"
     )

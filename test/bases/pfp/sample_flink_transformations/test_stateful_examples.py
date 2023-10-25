@@ -1,6 +1,7 @@
 from pyflink.testing.test_case_utils import PyFlinkUTTestCase
-
+import unittest
 from pfp.sample_flink_transformations.stateful_examples import *
+from pfp.test_utils.core import run_slow_tests
 
 
 class StatefulExampleUTTestCase(PyFlinkUTTestCase):
@@ -8,6 +9,7 @@ class StatefulExampleUTTestCase(PyFlinkUTTestCase):
     A set of unit tests to test stateful examples
     """
 
+    @unittest.skipUnless(run_slow_tests(), "slow test")
     def test_count_all_user_actions_1(self):
         """
         count_all_user_actions transformation should count all user actions when no filtering criteria is given
@@ -41,6 +43,7 @@ class StatefulExampleUTTestCase(PyFlinkUTTestCase):
         ]
         self.assertListEqual(outputs, expected_outputs)
 
+    @unittest.skipUnless(run_slow_tests(), "slow test")
     def test_count_all_user_actions_2(self):
         """
         count_all_user_actions transformation should count all login user actions when filtering criteria is set to
@@ -72,6 +75,7 @@ class StatefulExampleUTTestCase(PyFlinkUTTestCase):
         ]
         self.assertListEqual(outputs, expected_outputs)
 
+    @unittest.skipUnless(run_slow_tests(), "slow test")
     def test_count_all_user_actions_last_x_seconds_1(self):
         """
         count_all_user_actions_last_x_seconds should emit counts over sliding windows of x seconds every y seconds
