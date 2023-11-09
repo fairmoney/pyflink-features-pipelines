@@ -21,12 +21,32 @@ if __name__ == "__main__":
         ),
         sources_configs=[
             KinesisAvroSourceConfig(
-                source_name="kinesis_lendmate_application_updated",
-                stream_name="lendmate-application-updated",
+                source_name="kinesis_branch_events",
+                stream_name="branch-events",
                 aws_region="eu-west-1",
                 stream_init_pos=KinesisStreamInitPosition.LATEST,
                 schema_registry_config=LocalSchemaRegistryConfig(
-                    avro_file_path=os.path.join(avro_folder, "lendmate-application-updated.avsc")
+                    avro_file_path=os.path.join(avro_folder, "branch-event.avsc")
+                ),
+                transformation_function_arg_name="ds"
+            ),
+            # KinesisAvroSourceConfig(
+            #     source_name="kinesis_lendmate_application_updated",
+            #     stream_name="lendmate-application-updated",
+            #     aws_region="eu-west-1",
+            #     stream_init_pos=KinesisStreamInitPosition.TRIM_HORIZON,
+            #     schema_registry_config=LocalSchemaRegistryConfig(
+            #         avro_file_path=os.path.join(avro_folder, "lendmate-application-updated.avsc")
+            #     ),
+            #     transformation_function_arg_name="ds"
+            # ),
+            KinesisAvroSourceConfig(
+                source_name="kinesis_loan_data_updated",
+                stream_name="loan-data-updated",
+                aws_region="eu-west-1",
+                stream_init_pos=KinesisStreamInitPosition.LATEST,
+                schema_registry_config=LocalSchemaRegistryConfig(
+                    avro_file_path=os.path.join(avro_folder, "loan-data-updated.avsc")
                 ),
                 transformation_function_arg_name="ds"
             )
