@@ -1,0 +1,81 @@
+name: Workflow called to run reusable CI steps
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+      image:
+        required: true
+        type: string
+      ci_image:
+        required: false
+        type: string
+        default: ci:test
+      command:
+        required: true
+        type: string
+      target:
+        required: false
+        type: string
+        default: test
+      github_user:
+        required: false
+        type: string
+        default: fm-cicd
+      skip_ci:
+        required: false
+        type: boolean
+        default: false
+    secrets: {}
+
+env:
+  DOCKER_BUILDKIT: 1
+  GITHUB_USER: ${{ inputs.github_user }}
+  GITHUB_PASSWORD: ${{ secrets.API_TOKEN_GITHUB }}
+
+jobs:
+  ci:
+    if: ${{ !inputs.skip_ci }}
+    timeout-minutes: 60
+    runs-on: [self-hosted, large-runner]
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+
+      - name: pull built image
+        run: |
+          docker pull ${{ inputs.image }}
+
+      - name: build ci image
+        run: |
+          docker build --progress=plain --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --secret id=github_user,env=GITHUB_USER \
+            --secret id=github_password,env=GITHUB_PASSWORD \
+            --cache-from ${{ inputs.image }} \
+            --target ${{ inputs.target }} \
+            -t ${{ inputs.ci_image }} \
+            -f ${{ inputs.dockerfile }} .
+
+      - name: prepare environment
+        run: |
+          mkdir -p ./coverage ./tmp ./log
+          chown -R 1000:1000 ./coverage ./tmp ./log
+
+      - name: run command
+        shell: bash
+        run: ${{ inputs.command }}
+
+      - name: check coverage data
+        run: |
+          COVERAGE_GENERATED=$([ "$(ls -A ./coverage/)" ] && echo true || echo false)
+          echo "COVERAGE_GENERATED=${COVERAGE_GENERATED}" >> $GITHUB_ENV
+
+      - name: upload coverage files
+        if: ${{ env.COVERAGE_GENERATED == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: ./coverage
+          retention-days: 7
