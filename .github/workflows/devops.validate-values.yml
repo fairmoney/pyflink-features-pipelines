@@ -1,0 +1,207 @@
+name: DevOps Workflow called to validate kubernetes input values from ./kube/ folder
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: master
+      wrapper_chart:
+        required: false
+        type: string
+        default: app-wrapper
+      wrapper_ref:
+        required: false
+        type: string
+        default: master
+      base_chart:
+        required: false
+        type: string
+        default: fm-charts/base
+      base_ref:
+        required: false
+        type: string
+        default: master
+env:
+  AWS_ACCOUNT: '027159582536'
+  AWS_REGION: eu-west-1
+jobs:
+  validate-helm:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+      - name: generate aws config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: generate kubeconfig
+        run: |
+          export EKS_CLUSTER_NAME=$(aws ssm get-parameter --name /devops/ci-target/cluster --query 'Parameter.Value' --output text --profile non-prod)
+          aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --profile non-prod
+          env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl version
+
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          ref: ${{ inputs.ref }}
+
+      - name: checkout kube-state repository
+        uses: actions/checkout@v3
+        with:
+          path: kube-state
+          repository: fairmoney/kube-state
+          ref: ${{inputs.wrapper_ref}}
+          token: ${{secrets.HELM_TOKEN_GITHUB}}
+          fetch-depth: 1
+
+      - name: checkout helm-charts repository
+        uses: actions/checkout@v3
+        with:
+          path: helm-charts
+          repository: fairmoney/helm-charts
+          ref: ${{inputs.base_ref}}
+          token: ${{secrets.HELM_TOKEN_GITHUB}}
+          fetch-depth: 1
+
+      - name: get git variables
+        run: |
+          set -euo pipefail
+          REPOSITORY=${{github.repository}}
+          REPOSITORY_OWNER=${{github.repository_owner}}
+          REPOSITORY_NAME=${REPOSITORY##${REPOSITORY_OWNER}/}
+          echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
+
+      - name: generate test data
+        run: |
+          cat << EOF > kube/values-global-test.yaml
+            name: ${{env.REPOSITORY_NAME}}-ci
+            repoURL: https://github.com/fairmoney/helm-charts
+            project: default
+            containerRegistry: ${{env.AWS_ACCOUNT}}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
+            argocdImageUpdater:
+              allowTags: 'regexp:^master\..*$'
+              updateStrategy: newest-build
+            deletionPolicy: Orphan
+            appValues:
+              application: ${{env.REPOSITORY_NAME}}
+              environment: ci
+              defaultImage:
+                repository: ${{env.AWS_ACCOUNT}}.dkr.ecr.${{env.AWS_REGION}}.amazonaws.com
+                tag: latest
+              additionalServiceDomains: []
+              aivenKafka: non-prod
+              aivenProject: fm-non-prod
+              albDropInvalidHeaderFields: true
+              appNamespaces:
+              - ci
+              awsAccountId: "${{env.AWS_ACCOUNT}}"
+              awsOu: o-abcd/r-efgh/ou-ijklm-nopqr
+              awsOuAccounts:
+                groundcover-non-prod: "1234567890"
+                non-prod: "2345678901"
+                non-prod-cdk: "3456789012"
+                production: "633978989662"
+                production-backend: "508863430045"
+                production-card: "262635985392"
+                production-cdk: "306048654954"
+                production-websites: "973362048477"
+                service: "745379883438"
+              awsOuDataAccounts:
+                production-data-ingestions: "797185887781"
+                production-data-science-api: "861400907731"
+                sandbox: "4567890123"
+                staging-data-ingestions: "113798767495"
+                staging-data-science-api: "421393153235"
+                staging-data-science-research: "750219364171"
+              awsRegion: ${{env.AWS_REGION}}
+              awsRootAccountId: "5678901234"
+              awsServiceAccountId: "6789012345"
+              certArns:
+                fmtechio: arn:aws:acm:${{env.AWS_REGION}}:${{env.AWS_ACCOUNT}}:certificate/00000000-1111-2222-3333-444444444444
+                fairmoneyai: arn:aws:acm:${{env.AWS_REGION}}:${{env.AWS_ACCOUNT}}:certificate/00000000-1111-2222-3333-444444444444
+                fairmoneycomng: arn:aws:acm:${{env.AWS_REGION}}:${{env.AWS_ACCOUNT}}:certificate/00000000-1111-2222-3333-444444444444
+                fairmoneyio: arn:aws:acm:${{env.AWS_REGION}}:${{env.AWS_ACCOUNT}}:certificate/00000000-1111-2222-3333-444444444444
+                fairmoneyin: arn:aws:acm:${{env.AWS_REGION}}:${{env.AWS_ACCOUNT}}:certificate/00000000-1111-2222-3333-444444444444
+              clusterName: ci-v0
+              clusterOidcIssuer: oidc.eks.eu-west-1.amazonaws.com/id/00000000000000000000000000DEMO00
+              clusterSecretStoreName: secretsmanager-store
+              clusterWeight: 100
+              cognitoAuthorizationEndpoint: https://auth.fm-tech.io/oauth2/authorize
+              cognitoIssuer: https://cognito-idp.${{env.AWS_REGION}}.amazonaws.com/${{env.AWS_REGION}}_abcdefghi
+              cognitoTokenEndpoint: https://auth.fm-tech.io/oauth2/token
+              cognitoUserInfoEndpoint: https://auth.fm-tech.io/oauth2/userInfo
+              crossplaneDeletionPolicy: Orphan
+              databaseSubnets:
+              - subnet-01234567890123456
+              - subnet-12345678901234567
+              databaseZoneId: Z0000000000000000000
+              databaseZoneName: ci.fm-tech.io
+              datadogSite: datadoghq.eu
+              dbUserGroups:
+                production_backend:
+                - user1
+                - user2
+              disableHeavyDedicated: false
+              dnsZones:
+              - fm-tech.io
+              groundcoverNamespace: groundcover
+              iamPermBoundaryArn: arn:aws:iam::${{env.AWS_REGION}}:policy/crossplane-provider-aws-permission-boundary-policy
+              iamPermBoundaryForInfraArn: arn:aws:iam::${{env.AWS_REGION}}:policy/crossplane-provider-aws-permission-boundary-policy-for-infra
+              iamRoleNamePrefix: eks-ci-v0
+              iamTagName: managed-by
+              iamTagValue: crossplane
+              ingressGroupAppExt: app-ext
+              ingressGroupAppInt: app-int
+              ingressGroupSystemExt: system-ext
+              ingressGroupSystemInt: system-int
+              kmsKeyARN: arn:aws:kms:${{env.AWS_REGION}}:${{env.AWS_ACCOUNT}}:key/00000000-1111-2222-3333-444444444444
+              namespacedIngressGroup: true
+              priorityClassName: null
+              serviceDomain: fm-tech.io
+              stsMaxSessionDuration: 43200
+              tier: non-prod
+              vpcCidrs:
+              - 127.0.0.0/8
+              vpcId: vpc-01234567890abcdef
+              webAclArn: null
+          EOF
+
+      - name: run helm dependency build
+        run: |
+          helm dependency build kube-state/${{ inputs.wrapper_chart }}
+          helm dependency build helm-charts/${{ inputs.base_chart }}
+
+      - name: run helm template
+        run: |
+          declare -a OVERRIDES=("")
+          OVERRIDES+=($(find kube/ -name values-\*-override.yaml))
+          if [ ${#OVERRIDES[*]} -gt 0 ]
+          then
+            for key in "${!OVERRIDES[@]}" ; do
+              OPTION=""
+              if [ ! -z "${OVERRIDES[$key]}" ] ; then
+                OPTION="-f ${OVERRIDES[$key]}"
+              fi
+              echo "::group::Wrapper input (${OVERRIDES[$key]})"
+              helm template -f kube/values-global-test.yaml -f kube/values.yaml ${OPTION} --namespace ci ${{env.REPOSITORY_NAME}}-wrapper kube-state/${{inputs.wrapper_chart}} | tee argocd-app.yaml
+              echo "::endgroup::"
+              echo "::group::Base chart input (${OVERRIDES[$key]})"
+              cat argocd-app.yaml | yq .spec.source.helm.values | tee base-values.yaml
+              echo "::endgroup::"
+              echo "::group::Helm templating input (${OVERRIDES[$key]})"
+              helm template -f base-values.yaml --namespace ci ${{env.REPOSITORY_NAME}}-ci helm-charts/${{inputs.base_chart}} | tee helm-template.yaml
+              echo "::endgroup::"
+              echo "::group::Run kubectl apply --dry-run (${OVERRIDES[$key]})"
+              if yq -e eval-all 'select(. != null)' helm-template.yaml >/dev/null 2>&1; then
+                env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl -n ci create --dry-run=client -f helm-template.yaml
+              else
+                echo "::warning::No resources to apply"
+              fi
+              echo "::endgroup::"
+            done
+          fi
