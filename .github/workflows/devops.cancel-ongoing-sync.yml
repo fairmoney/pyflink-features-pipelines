@@ -1,0 +1,45 @@
+name: DevOps Workflow called to cancel ongoing ArgoCD application syncs for PR-environment before publishing a new image
+on:
+  workflow_call: {}
+
+jobs:
+  cancel-ongoing-sync:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+      - name: generate aws config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: generate kubeconfig
+        run: |
+          export EKS_CLUSTER_NAME=$(aws ssm get-parameter --name /devops/ci-target/cluster --query 'Parameter.Value' --output text --profile non-prod)
+          aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --profile non-prod
+          env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl version
+
+      - name: get git variables
+        run: |
+          set -euo pipefail
+          REPOSITORY=${{github.repository}}
+          REPOSITORY_OWNER=${{github.repository_owner}}
+          REPOSITORY_NAME=${REPOSITORY##${REPOSITORY_OWNER}/}
+          echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
+          GITHUB_REF=${{github.ref}}
+          PULL_NUMBER=$(echo "$GITHUB_REF" | awk -F / '{print $3}')
+          echo "PULL_NUMBER=${PULL_NUMBER}" >> $GITHUB_ENV
+
+      - name: cancel ongoing syncs
+        run: |
+          env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl -n argocd-pr get applications.argoproj.io | awk '/^${{env.REPOSITORY_NAME}}-.*-${{env.PULL_NUMBER}}/{print $1}' | while read app
+          do
+            ENV=$(echo ${app} | sed 's/^${{env.REPOSITORY_NAME}}-\(.*\)-${{env.PULL_NUMBER}}/\1/')
+            echo "::group::Cancelling sync in ${ENV}"
+            env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl -n argocd-pr patch app ${app} -p '{"operation":null,"spec":{"syncPolicy":{"automated":null}}}' --type merge && echo "Succeeded" || echo "Failed"
+            echo "::endgroup::"
+          done
+
+
