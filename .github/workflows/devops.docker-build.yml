@@ -1,0 +1,126 @@
+name: DevOps Workflow called to build an image out of a docker container
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+      target:
+        required: false
+        type: string
+      ref:
+        required: false
+        type: string
+        default: master
+      github_user:
+        required: false
+        type: string
+        default: fm-cicd
+      skip_build:
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      image:
+        description: The resulting image
+        value: ${{ jobs.build.outputs.image }}
+    secrets: {}
+env:
+  AWS_ACCOUNT: '027159582536'
+  AWS_REGION: eu-west-1
+  DOCKER_BUILDKIT: 1
+  GITHUB_PASSWORD: ${{ secrets.API_TOKEN_GITHUB }}
+  GITHUB_USER: ${{ inputs.github_user }}
+  REGISTRY: 027159582536.dkr.ecr.eu-west-1.amazonaws.com
+jobs:
+  build:
+    if: ${{ !inputs.skip_build }}
+    timeout-minutes: 60
+    runs-on: [self-hosted, standard-runner]
+    outputs:
+      image: ${{ steps.push.outputs.IMAGE }}
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          ref: ${{ inputs.ref }}
+
+      - name: get git variables
+        run: |
+          set -euo pipefail
+          REPOSITORY=${{github.repository}}
+          REPOSITORY_OWNER=${{github.repository_owner}}
+          REPOSITORY_NAME=${REPOSITORY##${REPOSITORY_OWNER}/}
+          LATEST_IMAGE_TAG=$(aws ecr describe-images --no-paginate --output text \
+            --registry-id ${{ env.AWS_ACCOUNT }} --repository-name ${REPOSITORY_NAME}  \
+            --query 'imageDetails | sort_by(@, &imagePushedAt) | reverse(@)[0].imageTags[0]')
+          GIT_BRANCH="$(git symbolic-ref HEAD --short 2>/dev/null)"
+          if [ "$GIT_BRANCH" = "" ] ; then
+            GIT_BRANCH="$(git rev-parse HEAD | xargs git name-rev | cut -d' ' -f2 | sed 's/remotes\/origin\///g')";
+          fi
+          GIT_BRANCH_SLUG=$(echo $GIT_BRANCH | sed -r s/[~\^]+//g | sed -r s/[^a-zA-Z0-9]+/-/g | sed -r s/^-+\|-+$//g | tr A-Z a-z)
+          GIT_SHORT_COMMIT="$(git log -1 --pretty=%h)"
+          echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
+          echo "LATEST_IMAGE_TAG=${LATEST_IMAGE_TAG}" >> $GITHUB_ENV
+          echo "GIT_BRANCH_SLUG=${GIT_BRANCH_SLUG}" >> $GITHUB_ENV
+          echo "GIT_SHORT_COMMIT=${GIT_SHORT_COMMIT}" >> $GITHUB_ENV
+          echo "CACHE_IMAGE=${{ env.REGISTRY }}/${REPOSITORY_NAME}:${LATEST_IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: set target image name for pull_request
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "TARGET_IMAGE=${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME}}:dev.${{ env.GIT_BRANCH_SLUG }}.${{ env.GIT_SHORT_COMMIT }}" >> $GITHUB_ENV
+
+      - name: set target image name for push
+        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
+        run: |
+          echo "TARGET_IMAGE=${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:master.${{ env.GIT_SHORT_COMMIT }}" >> $GITHUB_ENV
+          echo "LATEST_IMAGE=${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:latest" >> $GITHUB_ENV
+
+      - name: docker cache
+        run: |
+          docker pull ${{ env.CACHE_IMAGE }} || true
+
+      - name: docker build
+        id: docker_build
+        run: |
+          TARGET=""
+          if [ ! -z "${{ inputs.target }}" ] ; then
+            TARGET="--target ${{ inputs.target }}"
+          fi
+          docker build --progress=plain --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --secret id=github_user,env=GITHUB_USER \
+            --secret id=github_password,env=GITHUB_PASSWORD \
+            --pull --cache-from ${{ env.CACHE_IMAGE }} \
+            $TARGET \
+            -t ${{ env.TARGET_IMAGE }} \
+            -f ${{ inputs.dockerfile }} .
+
+          # we create an additional layer in the final image, that changes every time
+          docker build --progress=plain --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from ${{ env.TARGET_IMAGE }} \
+            $TARGET \
+            -t ${{ env.TARGET_IMAGE }} - <<EOF
+          FROM ${{ env.TARGET_IMAGE }}
+          RUN echo "Cache bust: $(date +%s)" > /dev/null
+          EOF
+
+      - name: docker push
+        id: push
+        run: |
+          docker push ${{ env.TARGET_IMAGE }}
+          echo "IMAGE=${{ env.TARGET_IMAGE }}" >> $GITHUB_OUTPUT
+
+      - name: docker push latest image
+        if: github.event_name == 'push'
+        run: |
+          docker tag ${{ env.TARGET_IMAGE }} ${{ env.LATEST_IMAGE }}
+          docker push ${{ env.LATEST_IMAGE }}
+
+      - name: generate report
+        run: |
+          echo "# Development image" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.TARGET_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
