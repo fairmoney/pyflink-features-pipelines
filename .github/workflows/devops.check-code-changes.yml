@@ -1,0 +1,32 @@
+name: DevOps Workflow called to check if there were changes outside kubernetes configuration
+on:
+  workflow_call: {}
+jobs:
+  check-code-changes:
+    runs-on: [self-hosted, standard-runner]
+    outputs:
+      result: ${{ steps.code_changes.outputs.RESULT }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Check if code changes
+        id: code_changes
+        run: |
+          set -x
+          # filter directories where no application code lives
+          directories=("kube" "\.github")
+          pattern=""
+          for dir in "${directories[@]}"; do
+            pattern+="-e ^$dir/ "
+          done
+
+          if (git diff --name-only origin/master | grep -v $pattern); then
+            echo "Code changes"
+            echo "RESULT=true" >> $GITHUB_OUTPUT
+          else
+            echo "No code changes"
+            echo "RESULT=false" >> $GITHUB_OUTPUT
+          fi
+
