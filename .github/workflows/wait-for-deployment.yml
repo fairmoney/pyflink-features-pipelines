@@ -1,0 +1,92 @@
+name: Workflow to wait for an image to be deployed
+on:
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+
+
+env:
+  KUBECTL: env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl
+  NS: staging
+  TIMEOUT_SECONDS: 600
+  POLL_INTERVAL_SECONDS: 30
+  LABEL: "app.kubernetes.io/instance"
+
+jobs:
+  wait:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+
+      - name: generate aws config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: generate kubeconfig
+        run: |
+          export EKS_CLUSTER_NAME=$(aws ssm get-parameter --name /devops/ci-target/cluster --query 'Parameter.Value' --output text --profile non-prod)
+          aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --profile non-prod
+          $KUBECTL version
+
+      - name: Wait for deployment to finish
+        run: |
+          REGISTRY=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\1/')
+          APP=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\2/')
+          DESIRED_TAG=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\3/')
+
+          function wait_for_image {
+            set -euo pipefail
+
+            APP=$1
+            NS=$2
+            REGISTRY=$3
+            LABEL=$4
+            DESIRED_TAG=$5
+
+            # we check the current digest and compare it with the existing one in the cluster later
+            # this way we can skip waiting in case the image-tag changed but the digest didn't which
+            # leads to the new image never being deployed
+            NEW_DIGEST=$(aws ecr describe-images --repository-name "$APP" --image-id "{\"imageTag\": \"$DESIRED_TAG\"}" --profile non-prod | jq .imageDetails[0].imageDigest)
+            OLD_DIGEST="NULL"
+
+            while true; do
+              echo "Waiting for desired image to be deployed: $DESIRED_TAG ..."
+
+              PAT="/$REGISTRY\/$APP/{ print \$NF }"
+              TAG=$($KUBECTL -n "$NS" get deployments -l "$LABEL=$APP-$NS" \
+                  -o jsonpath="{range .items[*]}{range .spec.template.spec.containers[*]}{ .image }{'\n'}{ end }{end}" |
+                sort -fu | awk -F: "$PAT")
+
+              if [ "$OLD_DIGEST" == "NULL" ]; then
+                OLD_DIGEST=$(aws ecr describe-images --repository-name "$APP" --image-id "{\"imageTag\": \"$TAG\"}" --profile non-prod | jq .imageDetails[0].imageDigest)
+              fi
+
+              echo "Images in cluster: $TAG"
+              if [ "$DESIRED_TAG" == "$TAG" ] || [ "$NEW_DIGEST" == "$OLD_DIGEST" ]; then
+                echo "Success! New image rolled out or no change to previous image."
+                break
+              fi
+
+              sleep "$POLL_INTERVAL_SECONDS"
+            done
+          }
+
+          export -f wait_for_image
+          if ! timeout "$TIMEOUT_SECONDS" bash -c "wait_for_image $APP $NS $REGISTRY $LABEL $DESIRED_TAG"; then
+            echo "Timeout or error waiting for image to be deployed!"
+            exit 1
+          fi
+
+          echo "Waiting for pods to become ready..."
+
+          # We filter all completed jobs. This is safe to do so because argocd will update
+          # deployments only when the pre-up jobs successfully completed
+          $KUBECTL rollout status deployment -n $NS -l "$LABEL=$APP-$NS" --timeout="${TIMEOUT_SECONDS}s"
+
+          echo "All pods are ready. Deployment complete."
