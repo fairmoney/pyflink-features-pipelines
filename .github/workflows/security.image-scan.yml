@@ -1,0 +1,136 @@
+on:
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+
+jobs:
+  image_scan:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+
+      - name: generate aws config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: evaluate image scan
+        run: |
+          # Function to format JSON attributes into Markdown list items
+          format_attributes() {
+            local attr_string=""
+            local attributes="$1"
+            local count=$(echo "$attributes" | jq '. | length')
+            for ((i = 0; i < count; i++)); do
+              local key=$(echo "$attributes" | jq -r ".[$i].key")
+              local value=$(echo "$attributes" | jq -r ".[$i].value")
+              attr_string+="\n- **$key:** $value"
+            done
+            echo "$attr_string"
+          }
+
+          # Function to display JSON as beautiful Markdown
+          display_json_as_markdown() {
+            local json_input="$1"
+
+            local formatted_output=""
+            formatted_output+="### Vulnerability Details\n"
+
+            # Loop through each JSON object and format it
+            local count=$(echo "$json_input" | jq '. | length')
+            for ((i = 0; i < count; i++)); do
+              local name=$(echo "$json_input" | jq -r ".[$i].name")
+              local uri=$(echo "$json_input" | jq -r ".[$i].uri")
+              local severity=$(echo "$json_input" | jq -r ".[$i].severity")
+              local attributes=$(echo "$json_input" | jq -c ".[$i].attributes")
+
+              formatted_output+="\n### $name\n"
+              formatted_output+="- **Severity:** $severity\n"
+              formatted_output+="- **CVE Link:** [$name]($uri)"
+
+              attr_string=$(format_attributes "$attributes")
+              formatted_output+="$attr_string\n"
+            done
+
+            echo -e "$formatted_output"
+          }
+
+          REPOSITORY=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\2/')
+          TAG=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\3/')
+
+          aws ecr wait image-scan-complete --repository-name "$REPOSITORY" --image-id "{\"imageTag\": \"$TAG\"}" --profile non-prod
+
+          SCAN_RESULTS=$(aws ecr describe-images \
+            --repository-name "$REPOSITORY" \
+            --no-paginate \
+            --query 'sort_by(imageDetails,& imagePushedAt)[-2:].{digest: imageDigest, scanResult: imageScanFindingsSummary.findingSeverityCounts}' \
+            --profile non-prod)
+
+          SCAN_RESULTS_COUNT=$(echo "$SCAN_RESULTS" | jq '. | length')
+
+          if [ "$SCAN_RESULTS_COUNT" -ge 2 ]; then
+            NEW_IMAGE_DIGEST=$(echo "$SCAN_RESULTS" | jq -r '.[1].digest')
+
+            LAST_SCAN_DETAILS=$(aws ecr describe-image-scan-findings \
+              --repository-name "$REPOSITORY" \
+              --image-id "imageDigest=$NEW_IMAGE_DIGEST" \
+              --query 'imageScanFindings.findings' \
+              --profile non-prod)
+
+            NEW_IMAGE_VULNS=$(echo "$SCAN_RESULTS" | jq .[1].scanResult)
+            OLD_IMAGE_VULNS=$(echo "$SCAN_RESULTS" | jq .[0].scanResult)
+
+            for category in CRITICAL HIGH MEDIUM LOW INFORMATIONAL UNDEFINED; do
+              OLD_CAT_VULNS=$(echo "$OLD_IMAGE_VULNS" | jq ".${category} // 0")
+              NEW_CAT_VULNS=$(echo "$NEW_IMAGE_VULNS" | jq ".${category} // 0")
+
+              if [ "$NEW_CAT_VULNS" -gt "$OLD_CAT_VULNS" ]; then
+                echo "Last build added $(( $NEW_CAT_VULNS - $OLD_CAT_VULNS )) new vulnerabilities of category: ${category}." | tee -a $GITHUB_STEP_SUMMARY
+              fi
+            done
+          else
+            NEW_IMAGE_DIGEST=$(echo "$SCAN_RESULTS" | jq -r '.[0].digest')
+
+            LAST_SCAN_DETAILS=$(aws ecr describe-image-scan-findings \
+              --repository-name "$REPOSITORY" \
+              --image-id "imageDigest=$NEW_IMAGE_DIGEST" \
+              --query 'imageScanFindings.findings' \
+              --profile non-prod)
+
+            NEW_IMAGE_VULNS=$(echo "$SCAN_RESULTS" | jq .[0].scanResult)
+          fi
+
+          echo "## Scan Results" >> $GITHUB_STEP_SUMMARY
+          display_json_as_markdown "$LAST_SCAN_DETAILS" | tee -a $GITHUB_STEP_SUMMARY
+
+          CRITICAL_COUNT=$(echo "$NEW_IMAGE_VULNS" | jq ".CRITICAL // 0")
+          HIGH_COUNT=$(echo "$NEW_IMAGE_VULNS" | jq ".HIGH // 0")
+          MEDIUM_COUNT=$(echo "$NEW_IMAGE_VULNS" | jq ".MEDIUM // 0")
+
+          error_message=""
+          exit_code=0
+
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            error_message+="More than 0 critical vulnerabilities found. "
+            exit_code=1
+          fi
+
+          if [ "$HIGH_COUNT" -gt 5 ]; then
+            error_message+="More than 5 high vulnerabilities found. "
+            exit_code=1
+          fi
+
+          if [ $(( $MEDIUM_COUNT + $HIGH_COUNT )) -gt 10 ]; then
+            error_message+="More than 10 medium+high vulnerabilities found. "
+            exit_code=1
+          fi
+
+          if [ "$exit_code" -eq 1 ]; then
+            echo "Rejecting! $error_message"
+            exit 1
+          fi
