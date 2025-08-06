@@ -1,0 +1,71 @@
+name: DevOps Workflow called to get links to ArgoCD application for PR-environments
+on:
+  workflow_call: {}
+
+jobs:
+  get-pr-envs:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+
+      - name: generate aws config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: generate kubeconfig
+        run: |
+          export EKS_CLUSTER_NAME=$(aws ssm get-parameter --name /devops/ci-target/cluster --query 'Parameter.Value' --output text --profile non-prod)
+          aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --profile non-prod
+          env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl version
+
+      - name: get git variables
+        run: |
+          set -euo pipefail
+          REPOSITORY=${{github.repository}}
+          REPOSITORY_OWNER=${{github.repository_owner}}
+          REPOSITORY_NAME=${REPOSITORY##${REPOSITORY_OWNER}/}
+          echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
+          GITHUB_REF=${{github.ref}}
+          PULL_NUMBER=$(echo "$GITHUB_REF" | awk -F / '{print $3}')
+          echo "PULL_NUMBER=${PULL_NUMBER}" >> $GITHUB_ENV
+
+      - name: get pr env urls
+        run: |
+          env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl -n argocd get applicationsets.argoproj.io | awk '/^${{env.REPOSITORY_NAME}}-.*/{print $1}' | while read appset
+          do
+            ENV=$(echo ${appset} | sed 's/^${{env.REPOSITORY_NAME}}-\(.*\)$/\1/')
+            env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl -n argocd get applicationsets.argoproj.io ${appset} -o json | jq -e '.spec.generators[] | select(.matrix) | .matrix.generators[] | select(.pullRequest) | .pullRequest | has("github")' && \
+            (
+              echo "# ${ENV} environment" >> $GITHUB_STEP_SUMMARY
+              echo "ArgoCD application: [${appset}-${{env.PULL_NUMBER}}](https://argocd-non-prod.fm-tech.io/applications/argocd/${appset}-${{env.PULL_NUMBER}}), Groundcover: [app](https://app.groundcover.com/workloads/workload-status?start=&end=&duration=Last+15+minutes&src_cluster=non-prod-v9&backendId=groundcover&workload=${appset}-${{env.PULL_NUMBER}}-api&namespace=staging&cluster=non-prod-v9)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              if [ "$(yq e '.appValues.snsSubscriptions' kube/values.yaml)" != "null" ]; then
+                ENDPOINT_NAMES=$(yq e '.appValues.snsSubscriptions.* | .endpointName' kube/values.yaml)
+                if [ -n "$ENDPOINT_NAMES" ]; then
+                  echo "AWS SQS Queues:" >> $GITHUB_STEP_SUMMARY
+                  for ENDPOINT_NAME in $ENDPOINT_NAMES; do
+                    echo "Queue: [${appset}-${{env.PULL_NUMBER}}-$ENDPOINT_NAME](https://eu-west-1.console.aws.amazon.com/sqs/v3/home?region=eu-west-1#/queues/https%3A%2F%2Fsqs.eu-west-1.amazonaws.com%2F027159582536%2Ffairmoney-staging-${{env.PULL_NUMBER}}-$ENDPOINT_NAME)" >> $GITHUB_STEP_SUMMARY
+                  done
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                fi
+              fi
+              if [ "$(yq e '.appValues.workers' kube/values.yaml)" != "null" ]; then
+                WORKERS=$(yq e '.appValues.workers|keys' kube/values.yaml | awk '{gsub("- ", ""); print}')
+                if [ -n "$WORKERS" ]; then
+                  echo "Workers:" >> $GITHUB_STEP_SUMMARY
+                  for WORKER in $WORKERS; do
+                    echo "Groundcover: [${appset}-${{env.PULL_NUMBER}}-$WORKER](https://app.groundcover.com/workloads/workload-status?start=&end=&duration=Last+15+minutes&src_cluster=non-prod-v9&backendId=groundcover&workload=${appset}-${{env.PULL_NUMBER}}-worker-$WORKER&namespace=staging&cluster=non-prod-v9)" >> $GITHUB_STEP_SUMMARY
+                  done
+                fi
+              fi
+            ) || true
+          done
