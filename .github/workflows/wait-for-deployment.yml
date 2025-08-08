@@ -1,0 +1,220 @@
+name: Workflow to wait for an image to be deployed
+on:
+  workflow_call:
+    inputs:
+      image:
+        required: true
+        type: string
+
+
+env:
+  KUBECTL: env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/home/runner kubectl
+  NS: staging
+  TIMEOUT_SECONDS: 600
+  POLL_INTERVAL_SECONDS: 30
+  LABEL: "app.kubernetes.io/instance"
+
+jobs:
+  wait:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+
+      - name: generate aws config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: generate kubeconfig
+        run: |
+          export EKS_CLUSTER_NAME=$(aws ssm get-parameter --name /devops/ci-target/cluster --query 'Parameter.Value' --output text --profile non-prod)
+          aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --profile non-prod
+          $KUBECTL version
+
+      - name: Wait for deployment to finish
+        run: |
+          REGISTRY=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\1/')
+          APP=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\2/')
+          DESIRED_TAG=$(echo ${{ inputs.image }} | sed 's/\(.*\)\/\(.*\):\(.*\)/\3/')
+
+          # Determine what resources exist for this app
+          ROLLOUT_EXISTS=$($KUBECTL -n $NS get rollouts -l "$LABEL=$APP-$NS" --ignore-not-found=true -o name | wc -l)
+          DEPLOYMENT_EXISTS=$($KUBECTL -n $NS get deployments -l "$LABEL=$APP-$NS" --ignore-not-found=true -o name | wc -l)
+
+          if [ "$ROLLOUT_EXISTS" -eq 0 ] && [ "$DEPLOYMENT_EXISTS" -eq 0 ]; then
+            echo "No Deployment or Rollout found with label $LABEL=$APP-$NS"
+            exit 1
+          fi
+
+          echo "Found resources: $ROLLOUT_EXISTS x Rollouts, $DEPLOYMENT_EXISTS x Deployments"
+
+          function wait_for_image {
+            set -euo pipefail
+
+            APP=$1
+            NS=$2
+            REGISTRY=$3
+            LABEL=$4
+            DESIRED_TAG=$5
+            CHECK_ROLLOUTS=$6
+            CHECK_DEPLOYMENTS=$7
+
+            # we check the current digest and compare it with the existing one in the cluster later
+            # this way we can skip waiting in case the image-tag changed but the digest didn't which
+            # leads to the new image never being deployed
+            NEW_DIGEST=$(aws ecr describe-images --repository-name "$APP" --image-id "{\"imageTag\": \"$DESIRED_TAG\"}" --profile non-prod | jq .imageDetails[0].imageDigest)
+            OLD_DIGEST="NULL"
+
+            while true; do
+              echo "Waiting for desired image to be deployed: $DESIRED_TAG ..."
+
+              PAT="/$REGISTRY\/$APP/{ print \$NF }"
+
+              if [ "$CHECK_ROLLOUTS" == "true" ]; then
+                ROLLOUT_TAG=$($KUBECTL -n "$NS" get rollouts -l "$LABEL=$APP-$NS" \
+                    -o jsonpath="{range .items[*]}{range .spec.template.spec.containers[*]}{ .image }{'\n'}{ end }{end}" |
+                  sort -fu | awk -F: "$PAT")
+              fi
+
+              if [ "$CHECK_DEPLOYMENTS" == "true" ]; then
+                DEPLOYMENT_TAG=$($KUBECTL -n "$NS" get deployments -l "$LABEL=$APP-$NS" \
+                    -o jsonpath="{range .items[*]}{range .spec.template.spec.containers[*]}{ .image }{'\n'}{ end }{end}" |
+                  sort -fu | awk -F: "$PAT")
+              fi
+
+              # Combine tags for overall TAG variable (prioritize rollouts' tag if both exist)
+              TAG=""
+              if [ "$CHECK_ROLLOUTS" == "true" ] && [ "$CHECK_DEPLOYMENTS" == "true" ]; then
+                TAG="$ROLLOUT_TAG"
+              elif [ "$CHECK_ROLLOUTS" == "true" ]; then
+                TAG="$ROLLOUT_TAG"
+              elif [ "$CHECK_DEPLOYMENTS" == "true" ]; then
+                TAG="$DEPLOYMENT_TAG"
+              fi
+
+              if [ "$OLD_DIGEST" == "NULL" ] && [ -n "$TAG" ]; then
+                OLD_DIGEST=$(aws ecr describe-images --repository-name "$APP" --image-id "{\"imageTag\": \"$(echo "$TAG" | head -n1)\"}" --profile non-prod 2>/dev/null | jq -r '.imageDetails[0].imageDigest // "NULL"')
+              fi
+
+              echo "Images in cluster: $TAG"
+              echo "DEBUG: ROLLOUT_TAG='$ROLLOUT_TAG', DEPLOYMENT_TAG='$DEPLOYMENT_TAG', DESIRED_TAG='$DESIRED_TAG'"
+              echo "DEBUG: NEW_DIGEST='$NEW_DIGEST', OLD_DIGEST='$OLD_DIGEST'"
+              echo "DEBUG: CHECK_ROLLOUTS='$CHECK_ROLLOUTS', CHECK_DEPLOYMENTS='$CHECK_DEPLOYMENTS'"
+
+              # Check if desired tag is present in the manifests based on what resources we have
+              DESIRED_TAG_DEPLOYED=false
+              if [ "$CHECK_ROLLOUTS" == "true" ] && [ "$CHECK_DEPLOYMENTS" == "true" ]; then
+                echo "DEBUG: Checking both rollouts and deployments"
+
+                # **IMPORTANT NOTE**: If both exist and Rollout is an api (so Deployment for workers), given that api sync-wave is lower than workers
+                # the Deployment will not be updated until the Rollout is ready, which can take much time, depending on the canary steps
+
+                if [ "$ROLLOUT_TAG" == "$DESIRED_TAG" ] && [ "$DEPLOYMENT_TAG" == "$DESIRED_TAG" ]; then
+                  DESIRED_TAG_DEPLOYED=true
+                  echo "DEBUG: Both rollout and deployment have desired tag"
+                else
+                  echo "DEBUG: Not all resources have desired tag - rollout match: $([ "$ROLLOUT_TAG" == "$DESIRED_TAG" ] && echo 'YES' || echo 'NO'), deployment match: $([ "$DEPLOYMENT_TAG" == "$DESIRED_TAG" ] && echo 'YES' || echo 'NO')"
+                fi
+              elif [ "$CHECK_ROLLOUTS" == "true" ]; then
+                echo "DEBUG: Checking rollouts only"
+                if [ "$ROLLOUT_TAG" == "$DESIRED_TAG" ]; then
+                  DESIRED_TAG_DEPLOYED=true
+                  echo "DEBUG: Rollout has desired tag"
+                fi
+              elif [ "$CHECK_DEPLOYMENTS" == "true" ]; then
+                echo "DEBUG: Checking deployments only"
+                if [ "$DEPLOYMENT_TAG" == "$DESIRED_TAG" ]; then
+                  DESIRED_TAG_DEPLOYED=true
+                  echo "DEBUG: Deployment has desired tag"
+                fi
+              fi
+
+              echo "DEBUG: DESIRED_TAG_DEPLOYED='$DESIRED_TAG_DEPLOYED'"
+
+              if [ "$DESIRED_TAG_DEPLOYED" == "true" ] || [ "$NEW_DIGEST" == "$OLD_DIGEST" ]; then
+                echo "Success! New image rolled out or no change to previous image."
+                break
+              fi
+
+              sleep "$POLL_INTERVAL_SECONDS"
+            done
+          }
+
+          function calculate_canary_timeout {
+            local rollout_name=$1
+            local namespace=$2
+
+            local pause_durations=$($KUBECTL get rollout "$rollout_name" -n "$namespace" -o json | \
+              jq -r '.spec.strategy.canary.steps[]? | select(.pause.duration) | .pause.duration' 2>/dev/null || echo "")
+
+            local total_seconds=0
+
+            # Convert each duration to seconds
+            while IFS= read -r duration; do
+              if [[ -n "$duration" ]]; then
+                local number=$(echo "$duration" | sed 's/[a-zA-Z]//g')
+                local unit=$(echo "$duration" | sed 's/[0-9]//g')
+
+                case "$unit" in
+                  "s") total_seconds=$((total_seconds + number)) ;;
+                  "m") total_seconds=$((total_seconds + number * 60)) ;;
+                  "h") total_seconds=$((total_seconds + number * 3600)) ;;
+                esac
+              fi
+            done <<< "$pause_durations"
+
+            # Add buffer for analysis and pod startup time (5 minutes)
+            total_seconds=$((total_seconds + 300))
+
+            echo "$total_seconds"
+          }
+
+          export -f wait_for_image
+          export -f calculate_canary_timeout
+          CHECK_ROLLOUTS="false"
+          CHECK_DEPLOYMENTS="false"
+
+          if [ "$ROLLOUT_EXISTS" -gt 0 ]; then
+            CHECK_ROLLOUTS="true"
+          fi
+          if [ "$DEPLOYMENT_EXISTS" -gt 0 ]; then
+            CHECK_DEPLOYMENTS="true"
+          fi
+
+          if ! timeout "$TIMEOUT_SECONDS" bash -c "wait_for_image $APP $NS $REGISTRY $LABEL $DESIRED_TAG $CHECK_ROLLOUTS $CHECK_DEPLOYMENTS"; then
+            echo "Timeout or error waiting for image to be deployed!"
+            exit 1
+          fi
+
+          echo "Waiting for pods to become ready..."
+
+          # We filter all completed (Rollout/Deployment). This is safe to do so because argocd will update
+          # rollouts/deployments only when the pre-up jobs successfully completed
+          if [ "$ROLLOUT_EXISTS" -gt 0 ]; then
+            echo "Checking Argo Rollout status..."
+            ROLLOUT_NAMES=$($KUBECTL -n $NS get rollouts -l "$LABEL=$APP-$NS" -o jsonpath="{.items[*].metadata.name}")
+
+            for ROLLOUT_NAME in $ROLLOUT_NAMES; do
+              echo "Checking status for rollout: $ROLLOUT_NAME"
+
+              CANARY_TIMEOUT=$(calculate_canary_timeout "$ROLLOUT_NAME" "$NS")
+              if [ "$CANARY_TIMEOUT" -gt "$TIMEOUT_SECONDS" ]; then
+                echo "Using Rollout canary steps calculated timeout: ${CANARY_TIMEOUT}s (original: ${TIMEOUT_SECONDS}s)"
+                EFFECTIVE_TIMEOUT="$CANARY_TIMEOUT"
+              else
+                EFFECTIVE_TIMEOUT="$TIMEOUT_SECONDS"
+              fi
+
+                $KUBECTL argo rollouts status "$ROLLOUT_NAME" -n $NS --timeout="${EFFECTIVE_TIMEOUT}s"
+            done
+          fi
+
+          if [ "$DEPLOYMENT_EXISTS" -gt 0 ]; then
+            echo "Checking Deployment rollout status..."
+            $KUBECTL rollout status deployment -n $NS -l "$LABEL=$APP-$NS" --timeout="${TIMEOUT_SECONDS}s"
+          fi
+
+          echo "All pods are ready. Deployment complete."
