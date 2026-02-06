@@ -1,0 +1,51 @@
+name: Push OpenAPI specification to the Stoplight repository
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: master
+      path_filters:
+        required: false
+        type: string
+        default: |
+          openapi:
+            - 'openapi/**'
+      source_directory:
+        required: true
+        type: string
+      target_directory:
+        required: true
+        type: string
+      destination_repository:
+        required: false
+        type: string
+        default: backend-openapi
+
+jobs:
+  build:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+      - uses: fairmoney/paths-filter@master
+        id: path_filter
+        with:
+          filters: ${{ inputs.path_filters }}
+      - name: push to fairmoney/${{ inputs.destination_repository }}
+        if: steps.path_filter.outputs.openapi == 'true'
+        uses: fairmoney/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          user-name: ${{ github.actor }}
+          source-directory: ${{ inputs.source_directory }}
+          destination-github-username: fairmoney
+          destination-repository-name: ${{ inputs.destination_repository }}
+          target-directory: ${{ inputs.target_directory }}
+          target-branch: master
