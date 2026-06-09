@@ -1,0 +1,38 @@
+name: DevOps Workflow called to promote a validated image to production
+on:
+  workflow_call:
+    inputs:
+      image:
+        type: string
+        required: true
+    outputs:
+      image:
+        description: The resulting image
+        value: ${{ jobs.pull_request_build.outputs.image }}
+    secrets: {}
+env:
+  PRODUCTION_REGISTRY: 878858384475.dkr.ecr.eu-west-1.amazonaws.com
+  NON_PROD_REGISTRY: 027159582536.dkr.ecr.eu-west-1.amazonaws.com
+jobs:
+  promote_docker:
+    timeout-minutes: 60
+    runs-on: [self-hosted, standard-runner]
+    outputs:
+      image: ${{ steps.push.outputs.IMAGE }}
+    steps:
+      - name: get production image name
+        run: |
+          IMAGE=$(echo ${{ inputs.image }} | sed "s/^${{ env.NON_PROD_REGISTRY }}/${{ env.PRODUCTION_REGISTRY }}/")
+          echo "TARGET_IMAGE=${IMAGE}" >> $GITHUB_ENV
+
+      - name: push image to production
+        run: |
+          docker pull ${{ inputs.image }}
+          docker tag ${{ inputs.image }} ${{ env.TARGET_IMAGE }}
+          docker push ${{ env.TARGET_IMAGE }}
+
+      - name: generate report
+        run: |
+          echo "# Production image" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.TARGET_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
