@@ -1,0 +1,51 @@
+name: Backend API Tests
+on:
+  workflow_call:
+    inputs:
+      tests_path:
+        required: true
+        type: string
+      continue_on_error:
+        required: false
+        type: boolean
+        default: false
+      image:
+        required: true
+        type: string
+
+env:
+  TESTER_IMAGE: 027159582536.dkr.ecr.eu-west-1.amazonaws.com/backend-api-tests:stable
+  SECRET_ID: arn:aws:secretsmanager:eu-west-1:027159582536:secret:github-actions/repos/backend-api-tests-P0XRKc
+
+jobs:
+  wait_for_deploy:
+    name: Wait for deploy
+    uses: ./.github/workflows/wait-for-deployment.yml
+    secrets: inherit
+    with:
+      image: ${{ inputs.image }}
+
+  api-tests:
+    name: Run test suite
+    needs:
+      - wait_for_deploy
+    runs-on: [self-hosted, large-runner]
+    steps:
+      - name: Generate AWS config
+        run: |
+          mkdir -p ${HOME}/.aws
+          cat << EOF > ${HOME}/.aws/config
+            [profile non-prod]
+            web_identity_token_file = /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+            role_arn = ${{ secrets.NON_PROD_EKS_ROLE_ARN }}
+          EOF
+
+      - name: Get required secrets
+        run: |
+          aws secretsmanager get-secret-value --secret-id=${{ env.SECRET_ID }} --profile non-prod | \
+          jq -r '.SecretString | fromjson? | to_entries | map("\(.key)=\(.value|tostring)") | .[]' > .env
+
+      - name: Run tests in docker
+        continue-on-error: ${{ inputs.continue_on_error }}
+        run: |
+          docker run --rm --env-file=.env ${{ env.TESTER_IMAGE }} bundle exec rspec ${{ inputs.tests_path }}
