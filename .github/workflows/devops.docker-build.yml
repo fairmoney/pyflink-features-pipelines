@@ -1,0 +1,219 @@
+name: DevOps Workflow called to build an image out of a docker container
+on:
+  workflow_call:
+    inputs:
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+      target:
+        required: false
+        type: string
+      ref:
+        required: false
+        type: string
+        default: master
+      base_branch:
+        required: true
+        type: string
+      github_user:
+        required: false
+        type: string
+        default: fm-cicd
+      skip_build:
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      image:
+        description: The resulting image
+        value: ${{ jobs.build.outputs.image }}
+    secrets: {}
+env:
+  AWS_ACCOUNT: '027159582536'
+  AWS_REGION: eu-west-1
+  DOCKER_BUILDKIT: 1
+  # build from event-specific commit SHA: PR head for pull requests, merge commit for push/workflow_dispatch
+  GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  GIT_BRANCH: ${{ inputs.ref }}
+  GITHUB_PASSWORD: ${{ secrets.API_TOKEN_GITHUB }}
+  GITHUB_USER: ${{ inputs.github_user }}
+  REGISTRY: 027159582536.dkr.ecr.eu-west-1.amazonaws.com
+jobs:
+  build:
+    if: ${{ !inputs.skip_build }}
+    timeout-minutes: 60
+    runs-on: [self-hosted, standard-runner]
+    outputs:
+      image: ${{ steps.push.outputs.IMAGE }}
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+          ref: ${{ env.GIT_COMMIT_SHA }}
+
+      # fetch latest commit in master branch to determine difference with PR branch (only for PR builds)
+      - name: fetch base branch
+        if: ${{ inputs.ref != inputs.base_branch }}
+        run: |
+          git fetch --depth 1 origin ${{ inputs.base_branch }}:${{ inputs.base_branch }}
+          echo "Successfully fetched ${{ inputs.base_branch }} branch"
+
+      - name: get current merged PR
+        uses: fairmoney/get-current-pr@3.0.0
+        if: ${{ inputs.ref == inputs.base_branch }}
+        id: PR
+
+      - name: "fetch details from Pull Request ${{ steps.PR.outputs.number }}"
+        if: steps.PR.outputs.pr_found == 'true'
+        run: |
+          echo "MERGED_PR_BRANCH=${{ fromJSON(steps.PR.outputs.pr).head.ref }}" >> $GITHUB_ENV
+          echo "MERGED_PR_LAST_COMMIT=${{ fromJSON(steps.PR.outputs.pr).head.sha }}" >> $GITHUB_ENV
+
+      - name: get git variables and cache image
+        run: |
+          set -euo pipefail
+          REPOSITORY=${{ github.repository }}
+          REPOSITORY_OWNER=${{ github.repository_owner }}
+          REPOSITORY_NAME=${REPOSITORY##${REPOSITORY_OWNER}/}
+          GIT_BRANCH_SLUG=$(echo ${{ env.GIT_BRANCH }} | sed -r s/[~\^]+//g | sed -r s/[^a-zA-Z0-9]+/-/g | sed -r s/^-+\|-+$//g | tr A-Z a-z)
+          GIT_SHORT_COMMIT="$(git rev-parse --short ${{ env.GIT_COMMIT_SHA }})"
+          SPECIFIC_CACHE_IMAGE_EXISTS=false
+
+          # for PR builds - use the last commit from the same PR branch or from master, if available
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # count number of commits in this PR branch that aren't in master
+            COMMIT_COUNT=$(git rev-list --count ${{ inputs.base_branch }}..HEAD)
+            GIT_SHORT_PREVIOUS_COMMIT=$(git log -2 --pretty=%h | tail -1)
+
+            if [[ "$COMMIT_COUNT" -gt 1 ]]; then
+              # PR has multiple commits, the previous commit image was built from this branch
+              PREVIOUS_IMAGE_TAG="dev.${GIT_BRANCH_SLUG}.${GIT_SHORT_PREVIOUS_COMMIT}"
+            else
+              # PR has only one commit, the previous commit image was built from master
+              PREVIOUS_IMAGE_TAG="${{ inputs.base_branch }}.${GIT_SHORT_PREVIOUS_COMMIT}"
+            fi
+
+            if aws ecr describe-images --registry-id ${{ env.AWS_ACCOUNT }} \
+                --repository-name ${REPOSITORY_NAME} \
+                --image-ids imageTag=${PREVIOUS_IMAGE_TAG} \
+                --output json 2>/dev/null | jq -e '.imageDetails | length > 0' &>/dev/null; then
+              SPECIFIC_CACHE_IMAGE_EXISTS=true
+            fi
+            if [[ "$SPECIFIC_CACHE_IMAGE_EXISTS" == "true" ]]; then
+              CACHE_IMAGE_TAG="${PREVIOUS_IMAGE_TAG}"
+            else
+              echo "Previous commit image (tag ${PREVIOUS_IMAGE_TAG}) not found, falling back to latest"
+            fi
+          fi
+
+          # for merge to master builds - use the last commit of the merged PR, if available
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/${{ inputs.base_branch }}" ]]; then
+            if [[ -n "${{ env.MERGED_PR_BRANCH }}" && -n "${{ env.MERGED_PR_LAST_COMMIT }}" ]]; then
+              # PR info is available
+              MERGED_PR_BRANCH_SLUG=$(echo ${{ env.MERGED_PR_BRANCH }} | sed -r s/[~\^]+//g | sed -r s/[^a-zA-Z0-9]+/-/g | sed -r s/^-+\|-+$//g | tr A-Z a-z)
+              MERGED_PR_SHORT_LAST_COMMIT=$(git rev-parse --short ${{ env.MERGED_PR_LAST_COMMIT }})
+              PREVIOUS_IMAGE_TAG="dev.${MERGED_PR_BRANCH_SLUG}.${MERGED_PR_SHORT_LAST_COMMIT}"
+
+              if aws ecr describe-images --registry-id ${{ env.AWS_ACCOUNT }} \
+                  --repository-name ${REPOSITORY_NAME} \
+                  --image-ids imageTag=${PREVIOUS_IMAGE_TAG} \
+                  --output json 2>/dev/null | jq -e '.imageDetails | length > 0' &>/dev/null; then
+                SPECIFIC_CACHE_IMAGE_EXISTS=true
+              fi
+              if [[ "$SPECIFIC_CACHE_IMAGE_EXISTS" == "true" ]]; then
+                CACHE_IMAGE_TAG="${PREVIOUS_IMAGE_TAG}"
+              else
+                echo "Previous commit image (tag ${PREVIOUS_IMAGE_TAG}) not found, falling back to latest"
+              fi
+            else
+              # No PR info available
+              echo "No merged PR information found, falling back to latest image for cache"
+            fi
+          fi
+
+          if [[ "$SPECIFIC_CACHE_IMAGE_EXISTS" == "false" ]]; then
+            # use latest image pushed to ECR as fallback if we can't find a more useful one
+            LATEST_IMAGE_TAG=$(aws ecr describe-images --no-paginate --output text \
+              --registry-id ${{ env.AWS_ACCOUNT }} --repository-name ${REPOSITORY_NAME} \
+              --query 'imageDetails | sort_by(@, &imagePushedAt) | reverse(@)[0].imageTags[0]')
+            CACHE_IMAGE_TAG="${LATEST_IMAGE_TAG}"
+          fi
+
+          echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
+          echo "GIT_BRANCH_SLUG=${GIT_BRANCH_SLUG}" >> $GITHUB_ENV
+          echo "GIT_SHORT_COMMIT=${GIT_SHORT_COMMIT}" >> $GITHUB_ENV
+          echo "CACHE_IMAGE_TAG=${CACHE_IMAGE_TAG}" >> $GITHUB_ENV
+          echo "CACHE_IMAGE=${{ env.REGISTRY }}/${REPOSITORY_NAME}:${CACHE_IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: set target image name for pull_request
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "TARGET_IMAGE=${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME}}:dev.${{ env.GIT_BRANCH_SLUG }}.${{ env.GIT_SHORT_COMMIT }}" >> $GITHUB_ENV
+
+      - name: set target image name for push
+        if: contains(fromJSON('["push", "workflow_dispatch"]'), github.event_name)
+        run: |
+          echo "TARGET_IMAGE=${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:${{ inputs.base_branch }}.${{ env.GIT_SHORT_COMMIT }}" >> $GITHUB_ENV
+          echo "LATEST_IMAGE=${{ env.REGISTRY }}/${{ env.REPOSITORY_NAME }}:latest" >> $GITHUB_ENV
+
+      - name: docker cache
+        run: |
+          # A new repository has no image in ECR yet, so there is nothing to cache from.
+          if docker pull ${{ env.CACHE_IMAGE }}; then
+            docker inspect ${{ env.CACHE_IMAGE }} | jq '.[].RootFS.Layers'
+          else
+            echo "No cache image ${{ env.CACHE_IMAGE }}, building without cache"
+          fi
+
+      - name: docker build
+        id: docker_build
+        run: |
+          TARGET=""
+          if [ ! -z "${{ inputs.target }}" ] ; then
+            TARGET="--target ${{ inputs.target }}"
+          fi
+
+          # Create a temporary Dockerfile with a dynamic last layer
+          cp ${{ inputs.dockerfile }} Dockerfile.withcachebust
+          echo "" >> Dockerfile.withcachebust
+          echo "RUN echo \"Cache bust: $(date +%s)\" > /dev/null" >> Dockerfile.withcachebust
+
+          docker build --progress=plain --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --secret id=github_user,env=GITHUB_USER \
+            --secret id=github_password,env=GITHUB_PASSWORD \
+            --pull --cache-from ${{ env.CACHE_IMAGE }} \
+            $TARGET \
+            -t ${{ env.TARGET_IMAGE }} \
+            -f Dockerfile.withcachebust .
+
+          docker inspect ${{ env.TARGET_IMAGE }} | jq '.[].RootFS.Layers'
+
+      - name: docker push
+        id: push
+        run: |
+          # Check if image already exists to prevent race condition failures
+          IMAGE_TAG=$(echo "${{ env.TARGET_IMAGE }}" | rev | cut -d: -f1 | rev)
+          if aws ecr describe-images --registry-id ${{ env.AWS_ACCOUNT }} \
+              --repository-name ${{ env.REPOSITORY_NAME }} \
+              --image-ids imageTag="${IMAGE_TAG}" \
+              --output json 2>/dev/null; then
+            echo "Image ${IMAGE_TAG} already exists, skipping push"
+          else
+            echo "Image ${IMAGE_TAG} does not exist, pushing..."
+            docker push ${{ env.TARGET_IMAGE }}
+          fi
+          echo "IMAGE=${{ env.TARGET_IMAGE }}" >> $GITHUB_OUTPUT
+
+      - name: docker push latest image
+        if: github.event_name == 'push'
+        run: |
+          docker tag ${{ env.TARGET_IMAGE }} ${{ env.LATEST_IMAGE }}
+          docker push ${{ env.LATEST_IMAGE }}
+
+      - name: generate report
+        run: |
+          echo "# Development image" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.TARGET_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
