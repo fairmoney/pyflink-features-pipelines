@@ -1,0 +1,83 @@
+name: AI-assisted label
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+# explicit so the job no longer depends on the repository's default token permissions
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  label-ai-assisted:
+    runs-on: [self-hosted, standard-runner]
+    steps:
+      - name: Check for AI co-authorship and label PR
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = context.payload.pull_request.number;
+            const labelName = 'ai-assisted';
+
+            // Agents in use: Claude Code, GitHub Copilot, Cursor, OpenAI Codex
+            const aiIdentity = /(@anthropic\.com|Copilot@users\.noreply\.github\.com|@cursor\.com|@openai\.com)/i;
+            const aiCoAuthorPattern = new RegExp(`Co-Authored-By:.*${aiIdentity.source}`, 'i');
+
+            // Check PR body
+            const prBody = context.payload.pull_request.body || '';
+            if (aiCoAuthorPattern.test(prBody)) {
+              core.info('AI co-author detected in PR body');
+              await addLabel();
+              return;
+            }
+
+            // Check commit messages
+            const commits = await github.paginate(
+              github.rest.pulls.listCommits,
+              { owner, repo, pull_number: prNumber, per_page: 100 }
+            );
+
+            // some agents commit under their own identity instead of a Co-Authored-By trailer
+            const found = commits.some(c =>
+              aiCoAuthorPattern.test(c.commit.message) ||
+              aiIdentity.test(c.commit.author.email) ||
+              aiIdentity.test(c.commit.committer.email)
+            );
+            if (found) {
+              core.info('AI co-author detected in commit message(s) or commit identity');
+              await addLabel();
+              return;
+            }
+
+            core.info('No AI co-author detected');
+
+            async function addLabel() {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: labelName });
+              } catch (e) {
+                if (e.status === 404) {
+                  core.info(`Creating label "${labelName}"`);
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: labelName,
+                    color: '9C27B0',
+                    description: 'PR contains AI-assisted code'
+                  });
+                } else {
+                  throw e;
+                }
+              }
+
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number: prNumber,
+                labels: [labelName]
+              });
+              core.info(`Label "${labelName}" added to PR #${prNumber}`);
+            }

@@ -1,0 +1,34 @@
+name: OSV-Scanner PR Scan
+
+# Synced from fairmoney/github-actions (workflows/osv-scanner/) - do not edit in
+# the consumer repo, changes will be overwritten by the next FileSync PR.
+# Fails the PR only when it introduces NEW known vulnerabilities compared to
+# the target branch.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  merge_group:
+    branches:
+      - main
+      - master
+
+permissions:
+  actions: read
+  security-events: write
+  contents: read
+
+jobs:
+  scan-pr:
+    uses: "fairmoney/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@fm-v2.7.0"
+    with:
+      # --allow-no-lockfiles: repos without a package manifest (e.g. krakend) pass
+      # cleanly instead of relying on the deprecated exit-code-128 fallback.
+      scan-args: |-
+        -r
+        --allow-no-lockfiles
+        ./
+      upload-sarif: false
+      runs-on: standard-runner
