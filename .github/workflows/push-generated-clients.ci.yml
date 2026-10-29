@@ -1,0 +1,86 @@
+name: Generate and push API clients
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: master
+      path_filters:
+        required: false
+        type: string
+        default: |
+          openapi:
+            - 'openapi/**'
+      source_directory:
+        required: true
+        type: string
+      target_directory:
+        required: true
+        type: string
+      target_branch:
+        required: false
+        type: string
+        default: master
+      destination_repository:
+        required: true
+        type: string
+      target_directory_ignored_file_name:
+        required: false
+        type: string
+        default: ''
+      github_user:
+        required: false
+        type: string
+        default: fm-cicd
+      go_generate_command:
+        required: false
+        type: string
+        default: |
+          cd openapi/go
+          sh gen.sh
+          cd ../..
+
+jobs:
+  build:
+    runs-on: [self-hosted, standard-runner]
+    env:
+      GOPRIVATE: github.com/fairmoney/*
+      # drop once pinned fairmoney/* actions publish Node 24 variants (FC-44927)
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.ref }}
+      - uses: fairmoney/paths-filter@4067d885736b84de7c414f582ac45897079b0a78
+        id: path_filter
+        with:
+          filters: ${{ inputs.path_filters }}
+      - name: setup go environment
+        if: steps.path_filter.outputs.openapi == 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Configure private git repositories
+        if: steps.path_filter.outputs.openapi == 'true'
+        run: git config --global url.https://${{ inputs.github_user }}:${{ secrets.API_TOKEN_GITHUB }}@github.com/.insteadOf https://github.com/
+      - name: generate Golang clients
+        if: steps.path_filter.outputs.openapi == 'true'
+        run: ${{ inputs.go_generate_command }}
+      - name: push to fairmoney/${{ inputs.destination_repository }}
+        if: steps.path_filter.outputs.openapi == 'true'
+        uses: fairmoney/github-action-push-to-another-repository@15b64c96a747843ef5e809ca104df18b0239d20f
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          user-name: ${{ github.actor }}
+          source-directory: ${{ inputs.source_directory }}
+          destination-github-username: fairmoney
+          destination-repository-name: ${{ inputs.destination_repository }}
+          target-directory: ${{ inputs.target_directory }}
+          target-branch: ${{ inputs.target_branch }}
+          target-directory-ignored-file-name: ${{ inputs.target_directory_ignored_file_name }}
