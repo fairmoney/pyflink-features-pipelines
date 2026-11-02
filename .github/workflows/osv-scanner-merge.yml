@@ -1,0 +1,35 @@
+name: OSV-Scanner Full Scan
+
+# Synced from fairmoney/github-actions (workflows/osv-scanner/) - do not edit in
+# the consumer repo, changes will be overwritten by the next FileSync PR.
+# Uploads the osv-results.json artifact ingested by Cerberus (RFC-0014).
+# Existing vulnerabilities do not fail the job: they are tracked as Cerberus
+# V001 violations instead.
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    - cron: "0 6 * * 1"     # weekly safety-net full scan
+  workflow_dispatch: {}      # manual rescan; also accepted by Cerberus ingestion
+
+permissions:
+  actions: read
+  security-events: write
+  contents: read
+
+jobs:
+  scan:
+    uses: "fairmoney/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@fm-v2.7.0"
+    with:
+      # --allow-no-lockfiles: repos without a package manifest (e.g. krakend) pass
+      # cleanly instead of relying on the deprecated exit-code-128 fallback.
+      scan-args: |-
+        -r
+        --allow-no-lockfiles
+        ./
+      upload-sarif: false
+      fail-on-vuln: false
+      runs-on: standard-runner
