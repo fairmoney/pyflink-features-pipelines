@@ -1,0 +1,32 @@
+name: Secret Scan (gitleaks)
+
+on:
+  push:                       # incremental scan of the pushed commits
+  pull_request:               # also scan PRs (matches the policy's required_triggers)
+  schedule:
+    - cron: "0 3 * * 1"       # weekly full-history sweep (surfaces pre-existing secrets)
+  workflow_dispatch:          # on-demand full-history scan
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  GITLEAKS_VERSION: "8.30.1"  # pin to a current release: https://github.com/gitleaks/gitleaks/releases
+
+jobs:
+  gitleaks:
+    runs-on:
+      - self-hosted
+      - standard-runner
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0      # gitleaks scans git history; 0 = full clone
+
+      - uses: fairmoney/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }} # Only required for Organizations, not personal accounts.
+          HOME: ${{ github.workspace }} # workaround for actions bug
