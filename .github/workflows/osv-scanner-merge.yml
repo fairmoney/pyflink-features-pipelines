@@ -1,0 +1,44 @@
+name: OSV-Scanner Full Scan
+
+# Synced from fairmoney/github-actions (workflows/osv-scanner/) - do not edit in
+# the consumer repo, changes will be overwritten by the next FileSync PR.
+# Uploads the osv-results.json artifact ingested by Cerberus (RFC-0014).
+# Existing vulnerabilities do not fail the job: they are tracked as Cerberus
+# V001 violations instead.
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  schedule:
+    - cron: "0 6 * * 1"     # weekly safety-net full scan
+  workflow_dispatch: {}      # manual rescan; also accepted by Cerberus ingestion
+
+permissions:
+  actions: read
+  security-events: write
+  contents: read
+
+jobs:
+  scan:
+    uses: "fairmoney/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@fm-v2.7.0"
+    with:
+      # --allow-no-lockfiles: repos without a package manifest (e.g. krakend) pass
+      # cleanly instead of relying on the deprecated exit-code-128 fallback.
+      scan-args: |-
+        -r
+        --allow-no-lockfiles
+        ./
+      upload-sarif: false
+      fail-on-vuln: false
+      runs-on: standard-runner
+      # govulncheck call analysis needs private fairmoney/* modules (gosh, ...).
+      # The reusable workflow mints a contents:read token from the
+      # fairmoney-osv-scanner GitHub App (org secrets below) and hands it only to
+      # the digest-pinned scanner container, as git GIT_CONFIG_* env. Modules in
+      # repositories the app is not installed on keep the go.mod-only fallback.
+      go-private-modules: github.com/fairmoney/*
+    secrets:
+      OSV_SCANNER_APP_CLIENT_ID: ${{ secrets.OSV_SCANNER_APP_CLIENT_ID }}
+      OSV_SCANNER_APP_PRIVATE_KEY: ${{ secrets.OSV_SCANNER_APP_PRIVATE_KEY }}
